@@ -130,3 +130,22 @@ if (isTypeOf(obj, SOURCE_TYPE, STREAM_TYPE)) {
     // ...
 }
 ```
+
+**addListener & removeListener**
+
+Watch store data change.
+
+```js
+const listener = (params, newData) => {
+    const [uid] = params;
+    if (uid === 123) {
+        // do some thing with newData
+    }
+};
+
+const unlisten = addListener(SomeSource, listener);
+
+removeListener(SomeSource, listener);
+// or
+unlisten();
+```
