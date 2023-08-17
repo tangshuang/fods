@@ -64,6 +64,8 @@ declare function renew<T, U extends any[]>(stream: Stream<T, U>, ...params: U): 
 
 declare function clear<T, U extends any[]>(source: Source<T, U>, ...params?: U): void;
 declare function clear<T, U extends any[]>(stream: Stream<T, U>, ...params?: U): void;
+declare function clear<T, U extends any[]>(source: Source<T, U>): void;
+declare function clear<T, U extends any[]>(stream: Stream<T, U>): void;
 
 declare function read<T, U extends any[]>(source: Source<T, U>, ...params?: U): T;
 declare function read<T, U extends any[]>(stream: Stream<T, U>, ...params?: U): T;
