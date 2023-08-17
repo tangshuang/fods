@@ -211,6 +211,13 @@ export function clear(source, ...params) {
     throw new Error('clear can only invoke SOURCE_TYPE and STREAM_TYPE');
   }
 
+  // release all local atoms
+  if (!params.length) {
+    atoms.length = 0;
+    return;
+  }
+
+  // release given params relative atom
   const hash = getObjectHash(params);
   const index = atoms.findIndex(item => item.hash === hash);
   if (index > -1) {
