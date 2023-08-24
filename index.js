@@ -47,6 +47,7 @@ export function action(act) {
   };
   return {
     type: ACTION_TYPE,
+    atoms: [],
     act: fn,
   };
 }
