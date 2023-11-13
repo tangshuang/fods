@@ -299,3 +299,12 @@ export function removeListener(source, fn) {
 
   event.off(fn);
 }
+
+export function apply(get) {
+  function qry(...params) {
+    return query(qry, ...params);
+  }
+  const src = source(get);
+  Object.assign(qry, src);
+  return qry;
+}
