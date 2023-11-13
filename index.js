@@ -61,8 +61,8 @@ export function stream(executor) {
   };
 }
 
-export function query(source, ...params) {
-  const { type, atoms, get, event } = source;
+export function query(src, ...params) {
+  const { type, atoms, get, event } = src;
 
   if (type !== SOURCE_TYPE) {
     throw new Error('query can only invoke SOURCE_TYPE');
@@ -93,8 +93,8 @@ export function query(source, ...params) {
   return defer;
 }
 
-export function emit(source, ...params) {
-  const { type, atoms, executor, event } = source;
+export function emit(src, ...params) {
+  const { type, atoms, executor, event } = src;
 
   if (type !== STREAM_TYPE) {
     throw new Error('emit can only invoke STREAM_TYPE');
@@ -154,8 +154,8 @@ export function emit(source, ...params) {
   return subscribe;
 }
 
-export function submit(source, ...params) {
-  const { type, act, atoms } = source;
+export function submit(src, ...params) {
+  const { type, act, atoms } = src;
 
   if (type !== ACTION_TYPE) {
     throw new Error('submit can only invoke ACTION_TYPE');
@@ -183,8 +183,8 @@ export function submit(source, ...params) {
   return defer;
 }
 
-export function renew(source, ...params) {
-  const { type, atoms } = source;
+export function renew(src, ...params) {
+  const { type, atoms } = src;
 
   if (![SOURCE_TYPE, STREAM_TYPE].includes(type)) {
     throw new Error('renew can only invoke SOURCE_TYPE and STREAM_TYPE');
@@ -195,18 +195,18 @@ export function renew(source, ...params) {
 
   if (!atom) {
     if (type === SOURCE_TYPE) {
-      return query(source, ...params);
+      return query(src, ...params);
     }
     else {
-      return emit(source, ...params);
+      return emit(src, ...params);
     }
   }
 
   return atom.renew();
 }
 
-export function clear(source, ...params) {
-  const { type, atoms } = source;
+export function clear(src, ...params) {
+  const { type, atoms } = src;
 
   if (![SOURCE_TYPE, STREAM_TYPE].includes(type)) {
     throw new Error('clear can only invoke SOURCE_TYPE and STREAM_TYPE');
@@ -230,8 +230,8 @@ export function isTypeOf(source, ...types) {
   return source && types.includes(source.type);
 }
 
-export function read(source, ...params) {
-  const { type, atoms } = source;
+export function read(src, ...params) {
+  const { type, atoms } = src;
 
   if (![SOURCE_TYPE, STREAM_TYPE].includes(type)) {
     throw new Error('read can only invoke SOURCE_TYPE and STREAM_TYPE');
@@ -245,15 +245,15 @@ export function read(source, ...params) {
   }
 }
 
-export function request(source, ...params) {
-  const { type } = source
+export function request(src, ...params) {
+  const { type } = src
 
   if (type === ACTION_TYPE) {
-    return Promise.resolve(source.act(...params))
+    return Promise.resolve(src.act(...params))
   }
 
   if (type === SOURCE_TYPE) {
-    return Promise.resolve(source.get(...params))
+    return Promise.resolve(src.get(...params))
   }
 
   if (type === STREAM_TYPE) {
@@ -271,15 +271,15 @@ export function request(source, ...params) {
 
     setTimeout(() => {
       // TODO support end manully
-      const execute = source.executor(dispatch);
+      const execute = src.executor(dispatch);
       execute(...params);
     }, 0);
     return subscribe;
   }
 }
 
-export function addListener(source, fn) {
-  const { type, event } = source;
+export function addListener(src, fn) {
+  const { type, event } = src;
 
   if (![SOURCE_TYPE, STREAM_TYPE].includes(type)) {
     throw new Error('addEventListener can only invoke SOURCE_TYPE and STREAM_TYPE');
@@ -290,8 +290,8 @@ export function addListener(source, fn) {
   return () => event.off(fn);
 }
 
-export function removeListener(source, fn) {
-  const { type, event } = source;
+export function removeListener(src, fn) {
+  const { type, event } = src;
 
   if (![SOURCE_TYPE, STREAM_TYPE].includes(type)) {
     throw new Error('removeEventListener can only invoke SOURCE_TYPE and STREAM_TYPE');
