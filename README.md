@@ -54,6 +54,32 @@ const userBooks = await query(UserBooks, '123');
 renew(UserBooks, '123');
 ```
 
+**compose**
+
+Define a COMPOSE_TYPE by `compose` and consume it by `query`.
+
+```js
+import { compose, query } from 'fods';
+
+const MyList = compose(
+    (ids) => {
+        // return result list array
+    },
+    // find value in result list to record cache
+    (res, id) => {
+        return res.find(item => item.id === id);
+    },
+);
+
+const lite = await query(MyList, 1, 2);
+const all = await query(MyList, 1, 2, 3, 4);
+// here, we query 1, 2 twice, however, in fact same id will be query only once inside fods
+
+renew(MyList, 2, 3);
+```
+
+Notice, params of compose should be same data type.
+
 **action & submit**
 
 Define a ACTION_TYPE by `action` and consume it by `submit`.
