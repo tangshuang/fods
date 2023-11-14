@@ -175,3 +175,15 @@ removeListener(SomeSource, listener);
 // or
 unlisten();
 ```
+
+## Quick Use
+
+```js
+const queryBook = source((id) => {
+    // ...
+});
+const book = await queryBook(123);
+renew(queryBook, 123);
+```
+
+`source` and `compose` are supported.
