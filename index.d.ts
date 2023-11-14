@@ -1,8 +1,11 @@
 export const SOURCE_TYPE = Symbol('source') as const;
 export const ACTION_TYPE = Symbol('action') as const;
 export const STREAM_TYPE = Symbol('stream') as const;
+export const COMPOSE_TYPE = Symbol('compose') as const;
+export const DYNAMIC_TYPE = Symbol('dynamic') as const;
 
 export interface Source<T = any, U = any[] | void> {
+  (...args: U): Promise<T>;
   readonly value: T;
   readonly params: U;
 }
@@ -82,4 +85,19 @@ declare function removeListener<T, U extends any[]>(stream: Stream<T, U>, listen
 
 export { renew, clear, read, request, addListener, removeListener };
 
-export declare function isTypeOf(value: any, ...types: typeof SOURCE_TYPE | typeof ACTION_TYPE | typeof ACTION_TYPE): value is Source | Stream | Action;
+export declare function isTypeOf(
+  value: any,
+  ...types:
+    | typeof SOURCE_TYPE
+    | typeof ACTION_TYPE
+    | typeof ACTION_TYPE
+    | typeof COMPOSE_TYPE
+    | typeof DYNAMIC_TYPE
+): value is Source | Stream | Action;
+
+export declare function compose<T extends any[], U = any>(
+  get: (...args: U[]) => T | Promise<T>,
+  find: (param: U, ret: T) => T[number],
+): Source<T, U[]>;
+
+export declare function dynamic<T, U>(get: (...args: U) => T | Promise<T>): Source<T, U>;
