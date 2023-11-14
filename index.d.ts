@@ -99,5 +99,3 @@ export declare function compose<T extends any[], U = any>(
   get: (...args: U[]) => T | Promise<T>,
   find: (param: U, ret: T) => T[number],
 ): Source<T, U[]>;
-
-export declare function dynamic<T, U>(get: (...args: U) => T | Promise<T>): Source<T, U>;

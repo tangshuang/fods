@@ -4,7 +4,6 @@ export const SOURCE_TYPE = Symbol('source');
 export const ACTION_TYPE = Symbol('action');
 export const STREAM_TYPE = Symbol('stream');
 export const COMPOSE_TYPE = Symbol('compose');
-export const DYNAMIC_TYPE = Symbol('dynamic');
 
 function Event() {
   this.events = [];
@@ -48,22 +47,6 @@ export function compose(get, find) {
     event: new Event(),
     get,
     find,
-  };
-
-  function qry(...params) {
-    return query(qry, ...params);
-  }
-
-  Object.assign(qry, src);
-  return qry;
-}
-
-export function dynamic(get) {
-  const src = {
-    type: DYNAMIC_TYPE,
-    cache: {},
-    event: new Event(),
-    get,
   };
 
   function qry(...params) {
@@ -180,28 +163,6 @@ export function query(src, ...params) {
 
     return defer;
   }
-  else if (type === DYNAMIC_TYPE) {
-    const { cache, get, event } = src;
-    const hash = getObjectHash(params);
-
-    if (cache[hash]) {
-      return Promise.resolve(cache[hash]);
-    }
-
-    if (src.defer) {
-      return src.defer;
-    }
-
-    const defer = Promise.resolve(get(...params)).then((res) => {
-      cache[hash] = res;
-      delete src.defer;
-      event.emit(params, res);
-      return res;
-    });
-    src.defer = defer;
-
-    return defer;
-  }
 
   throw new Error('query can only invoke SOURCE_TYPE, COMPOSE_TYPE');
 }
@@ -299,8 +260,8 @@ export function take(src, ...params) {
 export function renew(src, ...params) {
   const { type } = src;
 
-  if (![SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE, DYNAMIC_TYPE].includes(type)) {
-    throw new Error('renew can only invoke SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE, DYNAMIC_TYPE');
+  if (![SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE].includes(type)) {
+    throw new Error('renew can only invoke SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE');
   }
 
   if (type === COMPOSE_TYPE) {
@@ -309,13 +270,6 @@ export function renew(src, ...params) {
     params.forEach((_, i) => {
       delete cache[hashMap[i]];
     });
-    return query(src, ...params);
-  }
-
-  if (type === DYNAMIC_TYPE) {
-    const { cache } = src;
-    const hash = getObjectHash(params);
-    delete cache[hash];
     return query(src, ...params);
   }
 
@@ -338,13 +292,13 @@ export function renew(src, ...params) {
 export function clear(src, ...params) {
   const { type, atoms } = src;
 
-  if (![SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE, DYNAMIC_TYPE].includes(type)) {
-    throw new Error('clear can only invoke SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE, DYNAMIC_TYPE');
+  if (![SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE].includes(type)) {
+    throw new Error('clear can only invoke SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE');
   }
 
   // release all local atoms
   if (!params.length) {
-    if (type === COMPOSE_TYPE || type === DYNAMIC_TYPE) {
+    if (type === COMPOSE_TYPE) {
       src.cache = {};
     }
     else {
@@ -359,13 +313,6 @@ export function clear(src, ...params) {
     params.forEach((_, i) => {
       delete cache[hashMap[i]];
     });
-    return;
-  }
-
-  if (type === DYNAMIC_TYPE) {
-    const { cache } = src;
-    const hash = getObjectHash(params);
-    delete cache[hash];
     return;
   }
 
@@ -384,8 +331,8 @@ export function isTypeOf(source, ...types) {
 export function read(src, ...params) {
   const { type } = src;
 
-  if (![SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE, DYNAMIC_TYPE].includes(type)) {
-    throw new Error('read can only invoke SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE, DYNAMIC_TYPE');
+  if (![SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE].includes(type)) {
+    throw new Error('read can only invoke SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE');
   }
 
   if (type === COMPOSE_TYPE) {
@@ -393,12 +340,6 @@ export function read(src, ...params) {
     const hashMap = params.map(param => getObjectHash(param));
     const out = params.map((_, i) => cache[hashMap[i]]);
     return out;
-  }
-
-  if (type === DYNAMIC_TYPE) {
-    const { cache } = src;
-    const hash = getObjectHash(params);
-    return cache[hash];
   }
 
   const { atoms } = src;
@@ -417,7 +358,7 @@ export function request(src, ...params) {
     return Promise.resolve(src.act(...params));
   }
 
-  if (type === SOURCE_TYPE || type === COMPOSE_TYPE || type === DYNAMIC_TYPE) {
+  if (type === SOURCE_TYPE || type === COMPOSE_TYPE) {
     return Promise.resolve(src.get(...params));
   }
 
@@ -446,8 +387,8 @@ export function request(src, ...params) {
 export function addListener(src, fn) {
   const { type, event } = src;
 
-  if (![SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE, DYNAMIC_TYPE].includes(type)) {
-    throw new Error('addEventListener can only invoke SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE, DYNAMIC_TYPE');
+  if (![SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE].includes(type)) {
+    throw new Error('addEventListener can only invoke SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE');
   }
 
   event.on(fn);
@@ -458,8 +399,8 @@ export function addListener(src, fn) {
 export function removeListener(src, fn) {
   const { type, event } = src;
 
-  if (![SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE, DYNAMIC_TYPE].includes(type)) {
-    throw new Error('removeEventListener can only invoke SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE, DYNAMIC_TYPE');
+  if (![SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE].includes(type)) {
+    throw new Error('removeEventListener can only invoke SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE');
   }
 
   event.off(fn);
