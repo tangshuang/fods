@@ -141,7 +141,8 @@ export function query(src, ...params) {
     const req = Promise.resolve(get(filteredParams)).then((ret) => {
       filteredParams.forEach((param, i) => {
         const hash = filteredHashMap[i];
-        const value = find(ret, param);
+        // support param as a string, for example: res['xxxxxxx']
+        const value = find ? find(ret, param) : ret[param];
         cache[hash] = value;
         delete defers[hash];
       });
