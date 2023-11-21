@@ -95,5 +95,5 @@ export declare function isTypeOf(
 
 export declare function compose<T = any, U = any>(
   get: (...args: U[]) => T[] | Promise<T[]>,
-  find: (ret: T[], param: U) => T,
+  find?: (ret: T[], param: U) => T,
 ): Source<T[], U[]>;
