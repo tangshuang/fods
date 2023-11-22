@@ -116,53 +116,61 @@ export function query(src, ...params) {
     return defer;
   }
   else if (type === COMPOSE_TYPE) {
-    const { cache, get, find, event, defers } = src;
+    const { cache, get, find, event, defers, queue } = src;
 
     const hashMap = params.map(param => getObjectHash(param));
-    const filteredParams = params.filter((_, i) => !cache[hashMap[i]]);
+    const filteredParams = params.filter((_, i) => !(hashMap[i] in cache));
 
-    if (!filteredParams) {
+    // all cahced
+    if (!filteredParams.length) {
       const output = params.map((_, i) => cache[hashMap[i]]);
       return Promise.resolve(output);
     }
 
-    const pending = {};
-    const pendingList = [];
-    const filteredHashMap = filteredParams.map(param => getObjectHash(param));
-    filteredParams.forEach((_, i) => {
-      const hash = filteredHashMap[i];
-      if (defers[hash]) {
-        pending[hash] = defers[hash];
-        pendingList.push(defer[hash]);
-        filteredParams.splice(i, 1);
-      }
-    });
+    queue.push(...filteredParams);
 
-    const req = Promise.resolve(get(filteredParams)).then((ret) => {
-      filteredParams.forEach((param, i) => {
-        const hash = filteredHashMap[i];
-        // support param as a string, for example: res['xxxxxxx']
-        const value = find ? find(ret, param) : ret[param];
-        cache[hash] = value;
-        delete defers[hash];
-      });
-    });
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const pendingList = [];
+        const queueHashMap = queue.map(param => getObjectHash(param));
 
-    filteredParams.forEach((_, i) => {
-      const hash = filteredHashMap[i];
-      defers[hash] = req;
-    });
+        queue.forEach((_, i) => {
+          const hash = hashMap[i];
+          if (defers[hash]) {
+            pendingList.push(defers[hash]);
+            // remove those in pending
+            queue.splice(i, 1);
+            queueHashMap.splice(i, 1);
+          }
+        });
 
-    const defer = Promise.all([
-      req,
-      ...pendingList,
-    ]).then(() => {
-      const res = params.map((_, i) => cache[hashMap[i]]);
-      event.emit(params, res);
-      return res;
-    });
+        const req = Promise.resolve(get(queue)).then((ret) => {
+          queue.forEach((param, i) => {
+            // support param as a string, for example: res['xxxxxxx']
+            const value = find ? find(ret, param) : ret[param];
+            const hash = queueHashMap[i];
+            cache[hash] = value;
+            delete defers[hash];
+          });
+        });
 
-    return defer;
+        queueHashMap.forEach((hash) => {
+          defers[hash] = req;
+        });
+
+        // clear queue
+        queue.length = 0;
+
+        Promise.all([
+          req,
+          ...pendingList,
+        ]).then(() => {
+          const res = params.map((_, i) => cache[hashMap[i]]);
+          event.emit(params, res);
+          return res;
+        }).then(resolve).catch(reject);
+      }, 64);
+    });
   }
 
   throw new Error('query can only invoke SOURCE_TYPE, COMPOSE_TYPE');

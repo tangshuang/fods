@@ -3,7 +3,7 @@ export const ACTION_TYPE = Symbol('action') as const;
 export const STREAM_TYPE = Symbol('stream') as const;
 export const COMPOSE_TYPE = Symbol('compose') as const;
 
-export interface Source<T = any, U = any[] | void> {
+export interface Source<T = any, U = any[]> {
   (...args: U): Promise<T>;
   readonly value: T;
   readonly params: U;
@@ -87,10 +87,12 @@ export { renew, clear, read, request, addListener, removeListener };
 export declare function isTypeOf(
   value: any,
   ...types:
-    | typeof SOURCE_TYPE
-    | typeof ACTION_TYPE
-    | typeof ACTION_TYPE
-    | typeof COMPOSE_TYPE
+    (
+      | typeof SOURCE_TYPE
+      | typeof ACTION_TYPE
+      | typeof ACTION_TYPE
+      | typeof COMPOSE_TYPE
+    )[]
 ): value is Source | Stream | Action;
 
 export declare function compose<T = any, U = any>(
