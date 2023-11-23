@@ -125,7 +125,7 @@ export function query(src, ...params) {
 
     // all cahced
     if (!filteredParams.length) {
-      const output = params.map((_, i) => cache[hashMap[i]]);
+      const output = hashMap.map(hash => cache[hash]);
       return Promise.resolve(output);
     }
 
@@ -133,6 +133,21 @@ export function query(src, ...params) {
 
     return new Promise((resolve, reject) => {
       setTimeout(() => {
+        // queue has been cleaned
+        if (!queue.length) {
+          const qlist = hashMap.map((hash) => {
+            if (defers[hash]) {
+              return defers[hash];
+            }
+            return Promise.resolve(cache[hash]);
+          });
+          Promise.all(qlist).then(() => {
+            const res = hashMap.map(hash => cache[hash]);
+            return res;
+          }).then(resolve, reject);
+          return;
+        }
+
         const pendingList = [];
         const queueHashMap = queue.map(param => getObjectHash([param]));
 
@@ -167,10 +182,10 @@ export function query(src, ...params) {
           req,
           ...pendingList,
         ]).then(() => {
-          const res = params.map((_, i) => cache[hashMap[i]]);
+          const res = hashMap.map(hash => cache[hash]);
           event.emit(params, res);
           return res;
-        }).then(resolve).catch(reject);
+        }).then(resolve, reject);
       }, 64);
     });
   }
