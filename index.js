@@ -120,7 +120,7 @@ export function query(src, ...params) {
   else if (type === COMPOSE_TYPE) {
     const { cache, get, find, event, defers, queue } = src;
 
-    const hashMap = params.map(param => getObjectHash(param));
+    const hashMap = params.map(param => getObjectHash([param]));
     const filteredParams = params.filter((_, i) => !(hashMap[i] in cache));
 
     // all cahced
@@ -134,7 +134,7 @@ export function query(src, ...params) {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         const pendingList = [];
-        const queueHashMap = queue.map(param => getObjectHash(param));
+        const queueHashMap = queue.map(param => getObjectHash([param]));
 
         queue.forEach((_, i) => {
           const hash = hashMap[i];
@@ -277,7 +277,7 @@ export function renew(src, ...params) {
 
   if (type === COMPOSE_TYPE) {
     const { cache } = src;
-    const hashMap = params.map(param => getObjectHash(param));
+    const hashMap = params.map(param => getObjectHash([param]));
     params.forEach((_, i) => {
       delete cache[hashMap[i]];
     });
@@ -320,7 +320,7 @@ export function clear(src, ...params) {
 
   if (type === COMPOSE_TYPE) {
     const { cache } = src;
-    const hashMap = params.map(param => getObjectHash(param));
+    const hashMap = params.map(param => getObjectHash([param]));
     params.forEach((_, i) => {
       delete cache[hashMap[i]];
     });
@@ -348,7 +348,7 @@ export function read(src, ...params) {
 
   if (type === COMPOSE_TYPE) {
     const { cache } = src;
-    const hashMap = params.map(param => getObjectHash(param));
+    const hashMap = params.map(param => getObjectHash([param]));
     const out = params.map((_, i) => cache[hashMap[i]]);
     return out;
   }
