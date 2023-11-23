@@ -43,10 +43,12 @@ export function source(get) {
 export function compose(get, find) {
   const src = {
     type: COMPOSE_TYPE,
-    cache: {},
     event: new Event(),
     get,
     find,
+    cache: {},
+    queue: [],
+    defers: {},
   };
 
   function qry(...params) {
