@@ -146,7 +146,7 @@ export function query(src, ...params) {
           }
         });
 
-        const req = Promise.resolve(get(queue)).then((ret) => {
+        const req = Promise.resolve(get(...queue)).then((ret) => {
           queue.forEach((param, i) => {
             // support param as a string, for example: res['xxxxxxx']
             const value = find ? find(ret, param) : ret[param];
