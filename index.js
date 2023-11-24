@@ -149,22 +149,25 @@ export function query(src, ...params) {
         }
 
         const pendingList = [];
-        const queueHashMap = queue.map(param => getObjectHash([param]));
+        const queueParams = [...queue];
+        const queueHashMap = queueParams.map(param => getObjectHash([param]));
 
-        queue.forEach((_, i) => {
-          const hash = hashMap[i];
+        // clear queue
+        queue.length = 0;
+
+        queueHashMap.forEach((hash) => {
           if (defers[hash]) {
             pendingList.push(defers[hash]);
             // remove those in pending
-            queue.splice(i, 1);
+            queueParams.splice(i, 1);
             queueHashMap.splice(i, 1);
           }
         });
 
-        const req = Promise.resolve(get(...queue)).then((ret) => {
-          queue.forEach((param, i) => {
+        const newRequest = Promise.resolve(get(...queueParams)).then((ret) => {
+          queueParams.forEach((param, i) => {
             // support param as a string, for example: res['xxxxxxx']
-            const value = find ? find(ret, param) : ret[param];
+            const value = find(ret, param);
             const hash = queueHashMap[i];
             cache[hash] = value;
             delete defers[hash];
@@ -172,14 +175,11 @@ export function query(src, ...params) {
         });
 
         queueHashMap.forEach((hash) => {
-          defers[hash] = req;
+          defers[hash] = newRequest;
         });
 
-        // clear queue
-        queue.length = 0;
-
         Promise.all([
-          req,
+          newRequest,
           ...pendingList,
         ]).then(() => {
           const res = hashMap.map(hash => cache[hash]);
