@@ -5,6 +5,7 @@ export const COMPOSE_TYPE = Symbol('compose') as const;
 
 export interface Source<T = any, U = any[]> {
   (...args: U): Promise<T>;
+  renew: (...args: U) => Promise<T>;
   readonly value: T;
   readonly params: U;
 }
@@ -39,11 +40,11 @@ export declare function query<T, U extends any[]>(source: Source<T, U>, ...param
 export declare function action<T, U extends any[] = any[]>(act: (...args: U) => T | Promise<T>): Action<T, U>;
 
 /**
- * run the action from a ACTION_TYPE store
+ * run an action which is ACTION_TYPE store
  * @param source
  * @param params
  */
-export declare function submit<T, U extends any[]>(action: Action<T, U>, ...params: U): Promise<T>;
+export declare function take<T, U extends any[]>(action: Action<T, U>, ...params: U): Promise<T>;
 
 /**
  * define a STREAM_TYPE store

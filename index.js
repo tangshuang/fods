@@ -37,6 +37,11 @@ export function source(get) {
   }
 
   Object.assign(qry, src);
+
+  qry.renew = (...args) => {
+    return renew(qry, ...args);
+  };
+
   return qry;
 }
 
@@ -56,6 +61,11 @@ export function compose(get, find) {
   }
 
   Object.assign(qry, src);
+
+  qry.renew = (...args) => {
+    return renew(qry, ...args);
+  };
+
   return qry;
 }
 

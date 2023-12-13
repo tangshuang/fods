@@ -31,7 +31,7 @@ renew(UserBooks, '123');
 2. same request should not be send again when the request is runing
 3. multiple relative data should have their lifecycle management
 
-> A store is a place to put data in local, when we invoke `query` `emit` or `submit`, we find some thing in local store and reuse them, so that we can reduce the real request count, and share data amoung requests.
+> A store is a place to put data in local, when we invoke `query` `emit` or `take`, we find some thing in local store and reuse them, so that we can reduce the real request count, and share data amoung requests.
 
 ## API
 
@@ -80,12 +80,12 @@ renew(MyList, 2, 3);
 
 Notice, params of compose should be same data type.
 
-**action & submit**
+**action & take**
 
-Define a ACTION_TYPE by `action` and consume it by `submit`.
+Define a ACTION_TYPE by `action` and consume it by `take`.
 
 ```js
-import { action, submit } from 'fods';
+import { action, take } from 'fods';
 
 const AddUserBook = action(async (book) => {
     // send save book request
