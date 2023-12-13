@@ -5,6 +5,7 @@ export const COMPOSE_TYPE = Symbol('compose') as const;
 
 export interface Source<T = any, U = any[]> {
   (...args: U): Promise<T>;
+  query: (...params: U) => Promise<T>;
   request: (...args: U) => Promise<T>;
   renew: (...args: U) => Promise<T>;
   read: (...args: U) => T;
@@ -15,6 +16,7 @@ export interface Source<T = any, U = any[]> {
 
 export interface Stream<T = any[], U = any[] | void> {
   (...params: U): (fn: (chunk: any, chunks: T) => void) => void;
+  emit: (...params: U) => (fn: (chunk: any, chunks: T) => void) => void;
   request: (...args: U) => Promise<T>;
   renew: (...args: U) => Promise<T>;
   read: (...args: U) => T;
@@ -25,6 +27,7 @@ export interface Stream<T = any[], U = any[] | void> {
 
 export interface Action<T = any, U = any[] | void> {
   (...params: U): Promise<T>;
+  take: (...params: U) => Promise<T>;
   request: (...args: U) => Promise<T>;
   readonly data: T;
   readonly params: U;

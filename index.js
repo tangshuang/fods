@@ -53,6 +53,7 @@ export function source(get) {
   }
 
   assign(qry, src, {
+    query,
     renew,
     request,
     read,
@@ -78,6 +79,7 @@ export function compose(get, find) {
   }
 
   assign(qry, src, {
+    query,
     renew,
     request,
     read,
@@ -111,6 +113,7 @@ export function action(act) {
   }
 
   assign(qry, src, {
+    take,
     request,
   });
 
@@ -130,6 +133,7 @@ export function stream(executor) {
   }
 
   assign(emt, src, {
+    emit,
     renew,
     request,
     read,

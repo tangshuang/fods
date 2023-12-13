@@ -186,4 +186,14 @@ const book = await queryBook(123);
 renew(queryBook, 123);
 ```
 
-`source` and `compose` are supported.
+```js
+const BookSource = source((id) => {
+    // ...
+});
+const book = await BookSource.query(id);
+BookSource.renew(id);
+```
+
+- source, compose => query { query, request, read, clear }
+- stream => emit { emit, request, renew, read, clear }
+- action => take { take, request }
