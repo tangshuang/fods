@@ -24,6 +24,22 @@ Event.prototype.emit = function(params, ...args) {
   });
 }
 
+function assign(fn, src, mapping) {
+  Object.assign(fn, src);
+
+  if (!mapping) {
+    return;
+  }
+
+  const keys = Object.keys(mapping);
+  keys.forEach((key) => {
+    const value = mapping(key);
+    fn[key] = (...params) => {
+      return value(fn, ...params);
+    };
+  });
+}
+
 export function source(get) {
   const src = {
     type: SOURCE_TYPE,
@@ -36,11 +52,12 @@ export function source(get) {
     return query(qry, ...params);
   }
 
-  Object.assign(qry, src);
-
-  qry.renew = (...args) => {
-    return renew(qry, ...args);
-  };
+  assign(qry, src, {
+    renew,
+    request,
+    read,
+    clear,
+  });
 
   return qry;
 }
@@ -60,11 +77,12 @@ export function compose(get, find) {
     return query(qry, ...params);
   }
 
-  Object.assign(qry, src);
-
-  qry.renew = (...args) => {
-    return renew(qry, ...args);
-  };
+  assign(qry, src, {
+    renew,
+    request,
+    read,
+    clear,
+  });
 
   return qry;
 }
@@ -82,20 +100,43 @@ export function action(act) {
     });
     return cache[hash];
   };
-  return {
+  const src = {
     type: ACTION_TYPE,
     atoms: [],
     act: fn,
   };
+
+  function run(...params) {
+    return take(run, ...params);
+  }
+
+  assign(qry, src, {
+    request,
+  });
+
+  return run;
 }
 
 export function stream(executor) {
-  return {
+  const src = {
     type: STREAM_TYPE,
     executor,
     atoms: [],
     event: new Event(),
   };
+
+  function emt(...params) {
+    return emit(emt, ...params);
+  }
+
+  assign(emt, src, {
+    renew,
+    request,
+    read,
+    clear,
+  });
+
+  return emt;
 }
 
 export function query(src, ...params) {

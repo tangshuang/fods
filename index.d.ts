@@ -5,17 +5,27 @@ export const COMPOSE_TYPE = Symbol('compose') as const;
 
 export interface Source<T = any, U = any[]> {
   (...args: U): Promise<T>;
+  request: (...args: U) => Promise<T>;
   renew: (...args: U) => Promise<T>;
+  read: (...args: U) => T;
+  clear: (...args: U) => void;
   readonly value: T;
   readonly params: U;
 }
 
 export interface Stream<T = any[], U = any[] | void> {
+  (...params: U): (fn: (chunk: any, chunks: T) => void) => void;
+  request: (...args: U) => Promise<T>;
+  renew: (...args: U) => Promise<T>;
+  read: (...args: U) => T;
+  clear: (...args: U) => void;
   readonly chunks: T;
   readonly params: U;
 }
 
 export interface Action<T = any, U = any[] | void> {
+  (...params: U): Promise<T>;
+  request: (...args: U) => Promise<T>;
   readonly data: T;
   readonly params: U;
 }
@@ -24,7 +34,17 @@ export interface Action<T = any, U = any[] | void> {
  * define a SOURCE_TYPE store
  * @param get data getter function
  */
-export declare function source<T, U extends any[] = any[]>(get: (...args: U) => T | Promise<T>): Source<T, U>;
+export declare function source<T, U extends any[] = any[]>(get: (...args: U) => T | Promise<T>): Source<T, U, 'source'>;
+
+/**
+ * define a COMPOSE_TYPE store
+ * @param get data list getter function
+ * @param find function to find out a item from list
+ */
+export declare function compose<T = any, U = any>(
+  get: (...args: U[]) => T[] | Promise<T[]>,
+  find: (ret: T[], param: U) => (T | undefined),
+): Source<T[], U[]>;
 
 /**
  * query data from a SOURCE_TYPE store
@@ -95,8 +115,3 @@ export declare function isTypeOf(
       | typeof COMPOSE_TYPE
     )[]
 ): value is Source | Stream | Action;
-
-export declare function compose<T = any, U = any>(
-  get: (...args: U[]) => T[] | Promise<T[]>,
-  find: (ret: T[], param: U) => (T | undefined),
-): Source<T[], U[]>;
