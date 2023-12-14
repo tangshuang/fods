@@ -112,7 +112,7 @@ export function action(act) {
     return take(run, ...params);
   }
 
-  assign(qry, src, {
+  assign(run, src, {
     take,
     request,
   });
