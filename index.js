@@ -33,7 +33,7 @@ function assign(fn, src, mapping) {
 
   const keys = Object.keys(mapping);
   keys.forEach((key) => {
-    const value = mapping(key);
+    const value = mapping[key];
     fn[key] = (...params) => {
       return value(fn, ...params);
     };
