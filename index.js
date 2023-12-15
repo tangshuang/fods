@@ -74,8 +74,8 @@ export function compose(get, find) {
     defers: {},
   };
 
-  function qry(...params) {
-    return query(qry, ...params);
+  function qry(params) {
+    return query(qry, params);
   }
 
   assign(qry, src, {

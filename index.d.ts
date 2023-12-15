@@ -14,6 +14,17 @@ export interface Source<T = any, U = any[]> {
   readonly params: U;
 }
 
+export interface ComposeSource<T = any, U = any> {
+  (params: U[]): Promise<T[]>;
+  query: (params: U[]) => Promise<T[]>;
+  request: (params: U[]) => Promise<T[]>;
+  renew: (params: U[]) => Promise<T[]>;
+  read: (params: U[]) => T[];
+  clear: (params: U[]) => void;
+  readonly value: T[];
+  readonly params: U[];
+}
+
 export interface Stream<T = any[], U = any[] | void> {
   (...params: U): (fn: (chunk: any, chunks: T) => void) => void;
   emit: (...params: U) => (fn: (chunk: any, chunks: T) => void) => void;
@@ -37,7 +48,7 @@ export interface Action<T = any, U = any[] | void> {
  * define a SOURCE_TYPE store
  * @param get data getter function
  */
-export declare function source<T, U extends any[] = any[]>(get: (...args: U) => T | Promise<T>): Source<T, U, 'source'>;
+export declare function source<T, U extends any[] = any[]>(get: (...args: U) => T | Promise<T>): Source<T, U>;
 
 /**
  * define a COMPOSE_TYPE store
@@ -47,7 +58,7 @@ export declare function source<T, U extends any[] = any[]>(get: (...args: U) => 
 export declare function compose<T = any, U = any>(
   get: (params: U[]) => T[] | Promise<T[]>,
   find: (ret: T[], param: U) => (T | void),
-): Source<T[], U[]>;
+): ComposeSource<T, U>;
 
 /**
  * query data from a SOURCE_TYPE store
@@ -74,8 +85,10 @@ export declare function take<T, U extends any[]>(action: Action<T, U>, ...params
  * @param executor
  */
 export declare function stream<T = any, U extends any[] = any[]>(
-  executor:
-    (dispatch: (chunk: any) => void, defineStop: (stop: Function) => void) => (...params: U) => void
+  executor: (
+    dispatch: (chunk: any) => void,
+    defineStop: (stop: Function) => void,
+  ) => (...params: U) => void
 ): Stream<T, U>;
 
 /**
