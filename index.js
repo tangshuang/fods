@@ -175,6 +175,9 @@ export function query(src, ...params) {
   else if (type === COMPOSE_TYPE) {
     const { cache, get, find, event, defers, queue } = src;
 
+    // should must be an array to map to params
+    params = params[0];
+
     const hashMap = params.map(param => getObjectHash([param]));
     const filteredParams = params.filter((_, i) => !(hashMap[i] in cache));
 
@@ -347,6 +350,10 @@ export function renew(src, ...params) {
 
   if (type === COMPOSE_TYPE) {
     const { cache } = src;
+
+    // should must be an array to map to params
+    params = params[0];
+
     const hashMap = params.map(param => getObjectHash([param]));
     params.forEach((_, i) => {
       delete cache[hashMap[i]];
@@ -390,6 +397,10 @@ export function clear(src, ...params) {
 
   if (type === COMPOSE_TYPE) {
     const { cache } = src;
+
+    // should must be an array to map to params
+    params = params[0];
+
     const hashMap = params.map(param => getObjectHash([param]));
     params.forEach((_, i) => {
       delete cache[hashMap[i]];
@@ -418,6 +429,10 @@ export function read(src, ...params) {
 
   if (type === COMPOSE_TYPE) {
     const { cache } = src;
+
+    // should must be an array to map to params
+    params = params[0];
+
     const hashMap = params.map(param => getObjectHash([param]));
     const out = params.map((_, i) => cache[hashMap[i]]);
     return out;

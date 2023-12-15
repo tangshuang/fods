@@ -45,8 +45,8 @@ export declare function source<T, U extends any[] = any[]>(get: (...args: U) => 
  * @param find function to find out a item from list
  */
 export declare function compose<T = any, U = any>(
-  get: (...args: U[]) => T[] | Promise<T[]>,
-  find: (ret: T[], param: U) => (T | undefined),
+  get: (params: U[]) => T[] | Promise<T[]>,
+  find: (ret: T[], param: U) => (T | void),
 ): Source<T[], U[]>;
 
 /**

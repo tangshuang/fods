@@ -37,7 +37,7 @@ renew(UserBooks, '123');
 
 **source & query**
 
-Define a SOURCE_TYPE by `source` and consume it by `query`.
+Define a SOURCE_TYPE store by `source` and consume it by `query`.
 
 ```js
 import { source, query } from 'fods';
@@ -56,33 +56,33 @@ renew(UserBooks, '123');
 
 **compose**
 
-Define a COMPOSE_TYPE by `compose` and consume it by `query`.
+Define a COMPOSE_TYPE store by `compose` and consume it by `query`.
 
 ```js
 import { compose, query } from 'fods';
 
 const MyList = compose(
-    (ids) => {
+    (ids: string[]) => {
         // return result list array
     },
     // find value in result list to record cache
-    (res, id) => {
+    (res, id: string) => {
         return res.find(item => item.id === id);
     },
 );
 
-const lite = await query(MyList, 1, 2);
-const all = await query(MyList, 1, 2, 3, 4);
+const lite = await query(MyList, [1, 2]);
+const all = await query(MyList, [1, 2, 3, 4]);
 // here, we query 1, 2 twice, however, in fact same id will be query only once inside fods
 
-renew(MyList, 2, 3);
+renew(MyList, [2, 3]);
 ```
 
-Notice, params of compose should be same data type.
+Notice, compose should give only one parameter which is an array, and all of items should be same data type.
 
 **action & take**
 
-Define a ACTION_TYPE by `action` and consume it by `take`.
+Define a ACTION_TYPE store by `action` and consume it by `take`.
 
 ```js
 import { action, take } from 'fods';
