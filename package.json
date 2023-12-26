@@ -1,6 +1,6 @@
 {
   "name": "fods",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "description": "Frontend Operational Data Store",
   "main": "index.js",
   "type": "module",
