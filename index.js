@@ -222,7 +222,7 @@ export function query(src, ...params) {
           }
         });
 
-        const newRequest = Promise.resolve(get(...queueParams)).then((ret) => {
+        const newRequest = Promise.resolve(get(queueParams)).then((ret) => {
           queueParams.forEach((param, i) => {
             // support param as a string, for example: res['xxxxxxx']
             const value = find(ret, param);
