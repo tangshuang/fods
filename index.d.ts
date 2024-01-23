@@ -48,7 +48,10 @@ export interface Action<T = any, U = any[] | void> {
  * define a SOURCE_TYPE store
  * @param get data getter function
  */
-export declare function source<T, U extends any[] = any[]>(get: (...args: U) => T | Promise<T>): Source<T, U>;
+export declare function source<T, U extends any[] = any[]>(
+  get: (...args: U) => T | Promise<T>,
+  dep?: (...args: U) => Promise<any>,
+): Source<T, U>;
 
 /**
  * define a COMPOSE_TYPE store
@@ -58,6 +61,7 @@ export declare function source<T, U extends any[] = any[]>(get: (...args: U) => 
 export declare function compose<T = any, U = any>(
   get: (params: U[]) => T[] | Promise<T[]>,
   find: (ret: T[], param: U) => (T | void),
+  dep?: (params: U[]) => Promise<any>,
 ): ComposeSource<T, U>;
 
 /**
@@ -66,6 +70,7 @@ export declare function compose<T = any, U = any>(
  * @param params params passed into getter function
  */
 export declare function query<T, U extends any[]>(source: Source<T, U>, ...params: U): Promise<T>;
+export declare function query<T, U extends any>(source: ComposeSource<T, U>, params: U[]): Promise<T[]>;
 
 /**
  * define a ACTION_TYPE store

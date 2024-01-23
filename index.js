@@ -40,10 +40,11 @@ function assign(fn, src, mapping) {
   });
 }
 
-export function source(get) {
+export function source(get, dep) {
   const src = {
     type: SOURCE_TYPE,
     get,
+    dep,
     atoms: [],
     event: new Event(),
   };
@@ -63,11 +64,12 @@ export function source(get) {
   return qry;
 }
 
-export function compose(get, find) {
+export function compose(get, find, dep) {
   const src = {
     type: COMPOSE_TYPE,
     event: new Event(),
     get,
+    dep,
     find,
     cache: {},
     queue: [],
@@ -342,7 +344,7 @@ export function take(src, ...params) {
 }
 
 export function renew(src, ...params) {
-  const { type } = src;
+  const { type, dep } = src;
 
   if (![SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE].includes(type)) {
     throw new Error('renew can only invoke SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE');
@@ -358,7 +360,8 @@ export function renew(src, ...params) {
     params.forEach((_, i) => {
       delete cache[hashMap[i]];
     });
-    return query(src, ...params);
+
+    return Promise.resolve().then(() => dep?.([params])).then(() => query(src, [params]));
   }
 
   const { atoms } = src;
@@ -367,7 +370,7 @@ export function renew(src, ...params) {
 
   if (!atom) {
     if (type === SOURCE_TYPE) {
-      return query(src, ...params);
+      return Promise.resolve().then(() => dep?.(...params)).then(() => query(src, ...params));
     }
     else {
       return emit(src, ...params);
