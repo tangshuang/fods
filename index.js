@@ -135,7 +135,7 @@ export function stream(executor) {
   }
 
   assign(sub, src, {
-    subscribe: sub,
+    subscribe,
     renew,
     request,
     read,
@@ -269,13 +269,16 @@ export function subscribe(src, {
     const atom = atoms.find(item => item.hash === hash);
 
     if (atom?.chunks) {
-      const chunks = atom.chunks;
-      chunks.forEach((chunk) => {
-        ondata(chunk);
-        event.emit('data', params, chunk);
-      });
-      onend(chunks);
-      event.emit('end', params, chunks);
+      // run async
+      setTimeout(() => {
+        const chunks = atom.chunks;
+        chunks.forEach((chunk) => {
+          ondata?.(chunk);
+          event.emit('data', params, chunk);
+        });
+        onend?.(chunks);
+        event.emit('end', params, chunks);
+      }, 0);
       return;
     }
 
@@ -289,23 +292,24 @@ export function subscribe(src, {
       const execute = executor({
         ondata: (chunk) => {
           chunks.push(chunk);
-          data(chunk);
+          ondata?.(chunk);
           event.emit('data', params, chunk);
         },
         onend: () => {
-          end(chunks);
+          onend?.(chunks);
           // only patch chunks after successfully
           item.chunks = chunks;
           event.emit('end', params, chunks);
         },
         onerror: (e) => {
-          onerror(e);
+          onerror?.(e);
           event.emit('error', params, e);
         },
       });
       execute(...params);
     };
     item.renew = renew;
+    renew();
   };
 }
 
