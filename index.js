@@ -8,19 +8,21 @@ export const COMPOSE_TYPE = Symbol('compose');
 function Event() {
   this.events = [];
 }
-Event.prototype.on = function(fn) {
-  this.events.push(fn);
+Event.prototype.on = function(e, fn) {
+  this.events.push({ e, fn });
 }
-Event.prototype.off = function(fn) {
+Event.prototype.off = function(e, fn) {
   this.events.forEach((item, i, items) => {
-    if (item.fn === fn) {
+    if (item.e === e && item.fn === fn) {
       items.splice(i, 1);
     }
   });
 }
-Event.prototype.emit = function(params, ...args) {
-  this.events.forEach((fn) => {
-    fn(params, ...args);
+Event.prototype.emit = function(e, ...args) {
+  this.events.forEach((item) => {
+    if (item.e === e) {
+      item.fn(...args);
+    }
   });
 }
 
@@ -40,11 +42,10 @@ function assign(fn, src, mapping) {
   });
 }
 
-export function source(get, dep) {
+export function source(get) {
   const src = {
     type: SOURCE_TYPE,
     get,
-    dep,
     atoms: [],
     event: new Event(),
   };
@@ -64,12 +65,11 @@ export function source(get, dep) {
   return qry;
 }
 
-export function compose(get, find, dep) {
+export function compose(get, find) {
   const src = {
     type: COMPOSE_TYPE,
     event: new Event(),
     get,
-    dep,
     find,
     cache: {},
     queue: [],
@@ -130,19 +130,19 @@ export function stream(executor) {
     event: new Event(),
   };
 
-  function emt(...params) {
-    return emit(emt, ...params);
+  function sub(options) {
+    return subscribe(sub, options);
   }
 
-  assign(emt, src, {
-    emit,
+  assign(sub, src, {
+    subscribe: sub,
     renew,
     request,
     read,
     clear,
   });
 
-  return emt;
+  return sub;
 }
 
 export function query(src, ...params) {
@@ -163,7 +163,7 @@ export function query(src, ...params) {
     const renew = () => Promise.resolve(get(...params)).then((value) => {
       item.value = value;
       item.defer = Promise.resolve(value);
-      event.emit(params, value);
+      event.emit('change', params, value);
       return value;
     });
     const defer = renew();
@@ -243,7 +243,7 @@ export function query(src, ...params) {
           ...pendingList,
         ]).then(() => {
           const res = hashMap.map(hash => cache[hash]);
-          event.emit(params, res);
+          event.emit('change', params, res);
           return res;
         }).then(resolve, reject);
       }, 64);
@@ -253,65 +253,60 @@ export function query(src, ...params) {
   throw new Error('query can only invoke SOURCE_TYPE, COMPOSE_TYPE');
 }
 
-export function emit(src, ...params) {
+export function subscribe(src, {
+  ondata,
+  onend,
+  onerror,
+}) {
   const { type, atoms, executor, event } = src;
 
   if (type !== STREAM_TYPE) {
     throw new Error('emit can only invoke STREAM_TYPE');
   }
 
-  const hash = getObjectHash(params);
-  const atom = atoms.find(item => item.hash === hash);
+  return (...params) => {
+    const hash = getObjectHash(params);
+    const atom = atoms.find(item => item.hash === hash);
 
-  if (atom) {
-    const subscribe = (callback) => {
-      atom.chunks.forEach((chunk) => {
-        callback(chunk, atom.chunks);
+    if (atom?.chunks) {
+      const chunks = atom.chunks;
+      chunks.forEach((chunk) => {
+        ondata(chunk);
+        event.emit('data', params, chunk);
       });
-      // if stream is not ended, callback will be invoked when come to next emit
-      atom.subscribe(callback);
+      onend(chunks);
+      event.emit('end', params, chunks);
+      return;
+    }
+
+    const item = {
+      hash,
     };
-    return subscribe;
-  }
+    atoms.push(item);
 
-  const chunks = [];
-  const consumers = [];
-  const subscribe = (callback) => {
-    consumers.push(callback);
-  };
-  const dispatch = (chunk) => {
-    chunks.push(chunk);
-    consumers.forEach((callback) => {
-      callback(chunk, chunks);
-    });
-    event.emit(params, chunk, chunks);
-  };
-  let stop = null;
-  const defineStop = (stopStream) => {
-     stop = stopStream;
-  };
-
-  const renew = () => {
-    stop?.();
-    chunks.length = 0;
-    consumers.length = 0;
-    setTimeout(() => {
-      // TODO support end manully
-      const execute = executor(dispatch, defineStop);
+    const renew = () => {
+      const chunks = [];
+      const execute = executor({
+        ondata: (chunk) => {
+          chunks.push(chunk);
+          data(chunk);
+          event.emit('data', params, chunk);
+        },
+        onend: () => {
+          end(chunks);
+          // only patch chunks after successfully
+          item.chunks = chunks;
+          event.emit('end', params, chunks);
+        },
+        onerror: (e) => {
+          onerror(e);
+          event.emit('error', params, e);
+        },
+      });
       execute(...params);
-    }, 0);
-    return subscribe;
+    };
+    item.renew = renew;
   };
-  const item = {
-    hash,
-    subscribe,
-    chunks,
-    renew,
-  };
-  atoms.push(item);
-
-  renew();
-  return subscribe;
 }
 
 export function take(src, ...params) {
@@ -344,7 +339,7 @@ export function take(src, ...params) {
 }
 
 export function renew(src, ...params) {
-  const { type, dep } = src;
+  const { type, event } = src;
 
   if (![SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE].includes(type)) {
     throw new Error('renew can only invoke SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE');
@@ -361,20 +356,21 @@ export function renew(src, ...params) {
       delete cache[hashMap[i]];
     });
 
-    return Promise.resolve().then(() => dep?.([params])).then(() => query(src, [params]));
+    return Promise.resolve()
+      .then(() => event.emit('beforeRenew', [params]))
+      .then(() => query(src, [params]))
+      .then((data) => (event.emit('afterRenew', [params], data), data));
   }
 
   const { atoms } = src;
   const hash = getObjectHash(params);
   const atom = atoms.find(item => item.hash === hash);
 
-  if (!atom) {
-    if (type === SOURCE_TYPE) {
-      return Promise.resolve().then(() => dep?.(...params)).then(() => query(src, ...params));
-    }
-    else {
-      return emit(src, ...params);
-    }
+  if (type === SOURCE_TYPE && !atom) {
+    return Promise.resolve()
+      .then(() => event.emit('beforeRenew', params))
+      .then(() => query(src, ...params))
+      .then((data) => (event.emit('afterRenew', params, data), data));
   }
 
   return atom.renew();
@@ -446,7 +442,8 @@ export function read(src, ...params) {
   const atom = atoms.find(item => item.hash === hash)
 
   if (atom) {
-    return type === SOURCE_TYPE ? atom.value : atom.chunks;
+    return type === SOURCE_TYPE ? atom.value
+      : type === STREAM_TYPE ? atom.chunks : void 0;
   }
 }
 
@@ -462,45 +459,35 @@ export function request(src, ...params) {
   }
 
   if (type === STREAM_TYPE) {
-    const consumers = [];
-    const chunks = [];
-    const subscribe = (callback) => {
-      consumers.push(callback);
-    };
-    const dispatch = (chunk) => {
-      chunks.push(chunk);
-      consumers.forEach((callback) => {
-        callback(chunk, chunks);
+    const { executor } = src;
+    return new Promise((resolve, reject) => {
+      const exec = executor({
+        onend: resolve,
+        onerror: reject,
       });
-    };
-
-    setTimeout(() => {
-      // TODO support end manully
-      const execute = src.executor(dispatch);
-      execute(...params);
-    }, 0);
-    return subscribe;
+      exec(...params);
+    });
   }
 }
 
-export function addListener(src, fn) {
+export function addListener(src, e, fn) {
   const { type, event } = src;
 
   if (![SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE].includes(type)) {
     throw new Error('addEventListener can only invoke SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE');
   }
 
-  event.on(fn);
+  event.on(e, fn);
 
-  return () => event.off(fn);
+  return () => event.off(e, fn);
 }
 
-export function removeListener(src, fn) {
+export function removeListener(src, e, fn) {
   const { type, event } = src;
 
   if (![SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE].includes(type)) {
     throw new Error('removeEventListener can only invoke SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE');
   }
 
-  event.off(fn);
+  event.off(e, fn);
 }

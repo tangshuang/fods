@@ -66,9 +66,7 @@ const MyList = compose(
         // return result list array
     },
     // find value in result list to record cache
-    (res, id: string) => {
-        return res.find(item => item.id === id);
-    },
+    (res, id: string) => res.find(item => item.id === id),
 );
 
 const lite = await query(MyList, [1, 2]);
@@ -95,21 +93,25 @@ const AddUserBook = action(async (book) => {
 });
 ```
 
-**stream & emit**
+**stream & subscribe**
 
 ```js
-import { stream, emit } from 'fods';
+import { stream, subscribe } from 'fods';
 
-const UserBookRepo = stream((dispatch, defineStop) => (uid) => {
+const UserBookRepo = stream(({ ondata, onend, onerror }) => (uid) => {
     const stream = requestUserBooksStream(uid);
-    stream.on('data', dispatch);
-    defineStop(() => stream.stop());
+    stream.on('data', ondata);
+    stream.on('end', onend);
+    stream.on('error', onerror);
 });
 
-const subscribe = emit(UserBookRepo, '123');
-subscribe((chunk, chunks) => {
-    // render with chunk or chunks
+const emit = subscribe(UserBookRepo, {
+    ondata(chunk) {},
+    onend(chunks) {},
+    onerror(e) {},
 });
+
+emit('123');
 ```
 
 **renew**
@@ -120,6 +122,8 @@ Clear store and request again.
 const newData = await renew(SomeSource, '123');
 const newSubscribe = await renew(SomeStream, '123');
 ```
+
+*Renew stream will not request again, only clear store.*
 
 **clear**
 
@@ -145,6 +149,8 @@ Send a request with given source or stream outside the store.
 const data = await request(SomeSource, 123); // without any affect to the store
 ```
 
+Request stream will return a Promise resolved when the `end` event be triggered.
+
 **isTypeOf**
 
 Check whether the given object is type of a usable type.
@@ -162,19 +168,24 @@ if (isTypeOf(obj, SOURCE_TYPE, STREAM_TYPE)) {
 Watch store data change.
 
 ```js
-const listener = (params, newData) => {
+const listener = (params, data) => {
     const [uid] = params;
     if (uid === 123) {
-        // do some thing with newData
+        // do some thing with data
     }
 };
 
-const unlisten = addListener(SomeSource, listener);
+const unlisten = addListener(SomeSource, 'change', listener);
 
-removeListener(SomeSource, listener);
+removeListener(SomeSource, 'change', listener);
 // or
 unlisten();
 ```
+
+Events:
+
+- Source & Compose: 'change' | 'beforeRenew' | 'afterRenew'
+- Stream: 'data' | 'end' | 'error'
 
 ## Quick Use
 
@@ -194,6 +205,20 @@ const book = await BookSource.query(id);
 BookSource.renew(id);
 ```
 
-- source, compose => query { query, request, read, clear }
-- stream => emit { emit, request, renew, read, clear }
+- source, compose => query { query, request, renew, read, clear }
+- stream => subscribe { subscribe, request, renew, read, clear }
 - action => take { take, request }
+
+```js
+const subscribeSomeStream = stream(({ ondata, onend, onerror }) => {
+    // ...
+});
+
+const emit = subscribeSomeStream({
+    ondata: () => {},
+    onend: () => {},
+    onerror: () => {},
+});
+
+emit('arg');
+```
