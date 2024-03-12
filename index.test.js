@@ -21,15 +21,17 @@ describe('FODS', () => {
 
     const queryBooks = compose(
       async (ids) => new Promise((r) => {
-        console.log(ids);
         count ++;
         setTimeout(() => r(ids.map(id => ({ id, name: `book${id}` }))), 0);
       }),
       (ret, id) => ret.find(item => item.id === id),
     );
 
-    const books1 = await queryBooks(['sea', 'cast']);
-    const books2 = await queryBooks(['holl']);
+    // when two request send at the same time (in 64ms), they will share one queue, so the following count is 1
+    const [books1, books2] = await Promise.all([
+      queryBooks(['sea', 'cast']),
+      queryBooks(['holl']),
+    ]);
 
     expect(books1).toEqual([{ id: 'sea', name: 'booksea' }, { id: 'cast', name: 'bookcast' }]);
     expect(books2).toEqual([{ id: 'holl', name: 'bookholl' }]);
