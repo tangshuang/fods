@@ -261,7 +261,7 @@ export function subscribe(src, {
   const { type, atoms, executor, event } = src;
 
   if (type !== STREAM_TYPE) {
-    throw new Error('emit can only invoke STREAM_TYPE');
+    throw new Error('subscribe can only invoke STREAM_TYPE');
   }
 
   return (...params) => {
