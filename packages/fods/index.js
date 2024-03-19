@@ -367,42 +367,45 @@ export function renew(src, ...params) {
 }
 
 export function clear(src, ...params) {
-  const { type, atoms } = src;
+  const { type, atoms, event } = src;
 
   if (![SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE].includes(type)) {
     throw new Error('clear can only invoke SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE');
   }
 
-  // release all local atoms
-  if (!params.length) {
+  return event.emit('beforeClear', params).then(() => {
+    // release all local atoms
+    if (!params.length) {
+      if (type === COMPOSE_TYPE) {
+        src.cache = {};
+      }
+      else {
+        atoms.length = 0;
+      }
+      return event.emit('afterClear', params);
+    }
+
     if (type === COMPOSE_TYPE) {
-      src.cache = {};
+      const { cache } = src;
+
+      // should must be an array to map to params
+      params = params[0];
+
+      const hashMap = params.map(param => getObjectHash([param]));
+      params.forEach((_, i) => {
+        delete cache[hashMap[i]];
+      });
+      return event.emit('afterClear', params);
     }
-    else {
-      atoms.length = 0;
+
+    // release given params relative atom
+    const hash = getObjectHash(params);
+    const index = atoms.findIndex(item => item.hash === hash);
+    if (index > -1) {
+      atoms.splice(index, 1);
     }
-    return;
-  }
-
-  if (type === COMPOSE_TYPE) {
-    const { cache } = src;
-
-    // should must be an array to map to params
-    params = params[0];
-
-    const hashMap = params.map(param => getObjectHash([param]));
-    params.forEach((_, i) => {
-      delete cache[hashMap[i]];
-    });
-    return;
-  }
-
-  // release given params relative atom
-  const hash = getObjectHash(params);
-  const index = atoms.findIndex(item => item.hash === hash);
-  if (index > -1) {
-    atoms.splice(index, 1);
-  }
+    return event.emit('afterClear', params);
+  });
 }
 
 export function isTypeOf(src, ...types) {

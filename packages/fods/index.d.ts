@@ -112,12 +112,12 @@ declare function renew<T, U extends any[]>(source: Source<T, U>, ...params: U): 
 declare function renew<T, U extends any[]>(source: Composition<T, U>, ...params: U[]): Promise<T[]>;
 declare function renew<T, U extends any[]>(stream: Stream<T, U>, ...params: U): void;
 
-declare function clear<T, U extends any[]>(source: Source<T, U>, ...params?: U): void;
-declare function clear<T, U extends any[]>(source: Composition<T, U>, ...params?: U[]): void;
-declare function clear<T, U extends any[]>(stream: Stream<T, U>, ...params?: U): void;
-declare function clear<T, U extends any[]>(source: Source<T, U>): void;
-declare function clear<T, U extends any[]>(source: Composition<T, U>): void;
-declare function clear<T, U extends any[]>(stream: Stream<T, U>): void;
+declare function clear<T, U extends any[]>(source: Source<T, U>, ...params?: U): Promise<void>;
+declare function clear<T, U extends any[]>(source: Composition<T, U>, ...params?: U[]): Promise<void>;
+declare function clear<T, U extends any[]>(stream: Stream<T, U>, ...params?: U): Promise<void>;
+declare function clear<T, U extends any[]>(source: Source<T, U>): Promise<void>;
+declare function clear<T, U extends any[]>(source: Composition<T, U>): Promise<void>;
+declare function clear<T, U extends any[]>(stream: Stream<T, U>): Promise<void>;
 
 declare function read<T, U extends any[]>(source: Source<T, U>, ...params?: U): T;
 declare function read<T, U extends any[]>(source: Composition<T, U>, ...params?: U[]): T[];
@@ -128,20 +128,21 @@ declare function request<T, U extends any[]>(source: Composition<T, U>, ...param
 declare function request<T, U extends any[]>(stream: Stream<T, U>, ...params: U): Promise<T>;
 declare function request<T, U extends any[]>(action: Action<T, U>, ...params?: U): Promise<T>;
 
-type EventName = 'change' | 'beforeRenew' | 'afterRenew';
+type EventName = 'change' | 'beforeRenew' | 'afterRenew' | 'beforeClear' | 'afterClear';
 
-declare function addListener<T, U extends any[]>(source: Source<T, U>, event: EventName, callback: (params: U, value: T) => void): void;
-declare function addListener<T, U extends any[]>(source: Composition<T, U>, event: EventName, callback: (params: U[], value: T[]) => void): void;
-declare function addListener<T, U extends any[]>(stream: Stream<T, U>, event: 'data', callback: (params: U, chunk: any) => void): void;
-declare function addListener<T, U extends any[]>(stream: Stream<T, U>, event: 'end', callback: (params: U, chunks: T) => void): void;
-declare function addListener<T, U extends any[]>(stream: Stream<T, U>, event: 'error', callback: (params: U, error: Error) => void): void;
+declare function addListener<T, U extends any[]>(source: Source<T, U>, event: EventName, callback: (params: U, value?: T) => void): () => void;
+declare function addListener<T, U extends any[]>(source: Composition<T, U>, event: EventName, callback: (params: U[], value?: T[]) => void): () => void;
+declare function addListener<T, U extends any[]>(stream: Stream<T, U>, event: 'data', callback: (params: U, chunk: any) => void): () => void;
+declare function addListener<T, U extends any[]>(stream: Stream<T, U>, event: 'end', callback: (params: U, chunks: T) => void): () => void;
+declare function addListener<T, U extends any[]>(stream: Stream<T, U>, event: 'error', callback: (params: U, error: Error) => void): () => void;
+declare function removeListener<T, U extends any[]>(source: Stream<T, U>, event: 'beforeClear' | 'afterClear', callback: (params: U) => void): void;
 
-declare function removeListener<T, U extends any[]>(source: Source<T, U>, event: EventName, callback: (params: U, value: T) => void): void;
-declare function removeListener<T, U extends any[]>(source: Composition<T, U>, event: EventName, callback: (params: U[], value: T[]) => void): void;
-declare function removeListener<T, U extends any[]>(stream: Stream<T, U>, event: 'data', callback: (params: U, chunk: any) => void): void;
-declare function removeListener<T, U extends any[]>(stream: Stream<T, U>, event: 'end', callback: (params: U, chunks: T) => void): void;
-declare function removeListener<T, U extends any[]>(stream: Stream<T, U>, event: 'error', callback: (params: U, error: Error) => void): void;
-
+declare function removeListener<T, U extends any[]>(source: Source<T, U>, event: EventName, callback: Function): void;
+declare function removeListener<T, U extends any[]>(source: Composition<T, U>, event: EventName, callback: Function): void;
+declare function removeListener<T, U extends any[]>(stream: Stream<T, U>, event: 'data', callback: Function): void;
+declare function removeListener<T, U extends any[]>(stream: Stream<T, U>, event: 'end', callback: Function): void;
+declare function removeListener<T, U extends any[]>(stream: Stream<T, U>, event: 'error', callback: Function): void;
+declare function removeListener<T, U extends any[]>(source: Stream<T, U>, event: 'beforeClear' | 'afterClear', callback: Function): void;
 
 export { renew, clear, read, request, addListener, removeListener };
 

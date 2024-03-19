@@ -1,0 +1,24 @@
+{
+  "name": "fods-vue",
+  "version": "2.0.2",
+  "description": "Frontend Operational Data Store",
+  "main": "index.js",
+  "type": "module",
+  "author": "tangshuang",
+  "license": "MIT",
+  "scripts": {
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "transform": {}
+  },
+  "peerDependencies": {
+    "fods": "*",
+    "vue": "^3.0.0"
+  }
+}

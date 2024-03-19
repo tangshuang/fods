@@ -185,8 +185,8 @@ unlisten();
 
 Events:
 
-- Source & Compose: 'change' | 'beforeRenew' | 'afterRenew'
-- Stream: 'data' | 'end' | 'error'
+- Source & Compose: 'change' | 'beforeRenew' | 'afterRenew' | 'beforeClear' | 'afterClear'
+- Stream: 'data' | 'end' | 'error' | 'beforeClear' | 'afterClear'
 
 ## Quick Use
 
