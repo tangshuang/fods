@@ -6,6 +6,10 @@
   "type": "module",
   "author": "tangshuang",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/tangshuang/fods.git"
+  },
   "scripts": {
     "test": "NODE_OPTIONS=--experimental-vm-modules jest"
   },
