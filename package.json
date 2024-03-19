@@ -1,7 +1,7 @@
 {
   "name": "fods-project",
   "private": true,
-  "version": "2.1.0-beta",
+  "version": "2.1.0",
   "scripts": {
     "release": "standard-version"
   },
