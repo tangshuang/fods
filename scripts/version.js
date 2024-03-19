@@ -14,5 +14,6 @@ const pkgsRoot = path.resolve(root, 'packages');
 const pkgs = fs.readdirSync(pkgsRoot);
 
 pkgs.forEach((pkg) => {
-    exec(`cd "${path.resolve(pkgsRoot, pkg)}" && npm version ${version}`);
+    const sh = `cd "${path.resolve(pkgsRoot, pkg)}" && npm version ${version}`;
+    exec(sh);
 });
