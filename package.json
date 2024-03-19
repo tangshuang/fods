@@ -1,8 +1,14 @@
 {
   "name": "fods-project",
   "private": true,
-  "version": "2.2.1-0",
+  "version": "2.1.0-beta",
+  "scripts": {
+    "version": "npx standard-version --workspaces"
+  },
   "workspaces": [
     "packages/*"
-  ]
+  ],
+  "devDependencies": {
+    "standard-version": "^9.5.0"
+  }
 }
