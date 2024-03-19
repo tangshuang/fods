@@ -1,6 +1,6 @@
 {
   "name": "fods",
-  "version": "2.0.0",
+  "version": "2.0.2",
   "description": "Frontend Operational Data Store",
   "main": "index.js",
   "type": "module",
@@ -8,9 +8,6 @@
   "license": "MIT",
   "scripts": {
     "test": "NODE_OPTIONS=--experimental-vm-modules jest"
-  },
-  "dependencies": {
-    "ts-fns": "^11.1.1"
   },
   "devDependencies": {
     "jest": "^29.7.0"

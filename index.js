@@ -1,5 +1,3 @@
-import { getObjectHash } from 'ts-fns';
-
 export const SOURCE_TYPE = Symbol('source');
 export const ACTION_TYPE = Symbol('action');
 export const STREAM_TYPE = Symbol('stream');
@@ -19,27 +17,15 @@ Event.prototype.off = function(e, fn) {
   });
 }
 Event.prototype.emit = function(e, ...args) {
-  this.events.forEach((item) => {
-    if (item.e === e) {
-      item.fn(...args);
-    }
-  });
-}
-
-function assign(fn, src, mapping) {
-  Object.assign(fn, src);
-
-  if (!mapping) {
-    return;
-  }
-
-  const keys = Object.keys(mapping);
-  keys.forEach((key) => {
-    const value = mapping[key];
-    fn[key] = (...params) => {
-      return value(fn, ...params);
-    };
-  });
+  return Promise.all(
+    this.events.map((item) =>
+      Promise.resolve().then(() => {
+        if (item.e === e) {
+          return item.fn(...args);
+        }
+      })
+    )
+  );
 }
 
 export function source(get) {
@@ -363,7 +349,7 @@ export function renew(src, ...params) {
     return Promise.resolve()
       .then(() => event.emit('beforeRenew', [params]))
       .then(() => query(src, [params]))
-      .then((data) => (event.emit('afterRenew', [params], data), data));
+      .then((data) => event.emit('afterRenew', [params], data).then(() => data));
   }
 
   const { atoms } = src;
@@ -374,7 +360,7 @@ export function renew(src, ...params) {
     return Promise.resolve()
       .then(() => event.emit('beforeRenew', params))
       .then(() => query(src, ...params))
-      .then((data) => (event.emit('afterRenew', params, data), data));
+      .then((data) => event.emit('afterRenew', params, data).then(() => data));
   }
 
   return atom.renew();
@@ -419,8 +405,8 @@ export function clear(src, ...params) {
   }
 }
 
-export function isTypeOf(source, ...types) {
-  return source && types.includes(source.type);
+export function isTypeOf(src, ...types) {
+  return src && types.includes(src.type);
 }
 
 export function read(src, ...params) {
@@ -494,4 +480,118 @@ export function removeListener(src, e, fn) {
   }
 
   event.off(e, fn);
+}
+
+// ----------------------------------------
+
+function assign(fn, src, mapping) {
+  Object.assign(fn, src);
+
+  if (!mapping) {
+    return;
+  }
+
+  const keys = Object.keys(mapping);
+  keys.forEach((key) => {
+    const value = mapping[key];
+    fn[key] = (...params) => {
+      return value(fn, ...params);
+    };
+  });
+}
+
+/**
+ * @param {object} obj
+ * @returns {string}
+ */
+function getObjectHash(obj) {
+  if (typeof obj !== 'object') {
+    return
+  }
+
+  let str = stringify(obj)
+  let hash = getStringHash(str)
+  return hash
+}
+
+/**
+ * @param {object} obj
+ * @returns {string}
+ */
+function stringify(obj) {
+  const exists = [obj]
+  const used = []
+  const stringifyObjectByKeys = (obj) => {
+    if (Array.isArray(obj)) {
+      let items = obj.map((item) => {
+        if (item && typeof item === 'object') {
+          return stringifyObjectByKeys(item)
+        }
+        else {
+          return JSON.stringify(item)
+        }
+      })
+      let str = '[' + items.join(',') + ']'
+      return str
+    }
+
+    let str = '{'
+    let keys = Object.keys(obj)
+    let total = keys.length
+    keys.sort()
+    keys.forEach((key, i) => {
+      let value = obj[key]
+      str += key + ':'
+
+      if (value && typeof value === 'object') {
+        let index = exists.indexOf(value)
+        if (index > -1) {
+          str += '#' + index
+          used.push(index)
+        }
+        else {
+          exists.push(value)
+          const num = exists.length - 1
+          str += '#' + num + stringifyObjectByKeys(value)
+        }
+      }
+      else {
+        str += JSON.stringify(value)
+      }
+
+      if (i < total - 1) {
+        str += ','
+      }
+    })
+    str += '}'
+    return str
+  }
+  let str = stringifyObjectByKeys(obj)
+
+  exists.forEach((item, i) => {
+    if (!used.includes(i)) {
+      str = str.replace(new RegExp(`:#${i}`, 'g'), ':')
+    }
+  })
+
+  if (used.includes(0)) {
+    str = '#0' + str
+  }
+
+  return str
+}
+
+/**
+ * @param {string} str
+ * @returns {string}
+ */
+function getStringHash(str) {
+  let hash = 5381
+  let i = str.length
+
+  while (i) {
+    hash = (hash * 33) ^ str.charCodeAt(--i)
+  }
+
+  return hash >>> 0
 }
