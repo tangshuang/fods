@@ -147,7 +147,7 @@ export function query(src, ...params) {
       hash,
     };
     const renew = () => Promise.resolve(get(...params)).then((value) => {
-      item.value = value;
+      item.value = deepFreeze(value);
       item.defer = Promise.resolve(value);
       event.emit('change', params, value);
       return value;
@@ -215,7 +215,7 @@ export function query(src, ...params) {
             // support param as a string, for example: res['xxxxxxx']
             const value = find(ret, param);
             const hash = queueHashMap[i];
-            cache[hash] = value;
+            cache[hash] = deepFreeze(value);
             delete defers[hash];
           });
         });
@@ -284,7 +284,7 @@ export function subscribe(src, {
         onend: () => {
           onend?.(chunks);
           // only patch chunks after successfully
-          item.chunks = chunks;
+          item.chunks = deepFreeze(chunks);
           event.emit('end', params, chunks);
         },
         onerror: (e) => {
@@ -594,4 +594,20 @@ function getStringHash(str) {
   }
 
   return hash >>> 0
+}
+
+function deepFreeze(object) {
+  // Retrieve the property names defined on object
+  const propNames = Reflect.ownKeys(object);
+
+  // Freeze properties before freezing self
+  for (const name of propNames) {
+    const value = object[name];
+
+    if ((value && typeof value === "object") || typeof value === "function") {
+      deepFreeze(value);
+    }
+  }
+
+  return Object.freeze(object);
 }
