@@ -19,11 +19,15 @@ Event.prototype.off = function(e, fn) {
   });
 }
 Event.prototype.emit = function(e, ...args) {
-  this.events.forEach((item) => {
-    if (item.e === e) {
-      item.fn(...args);
-    }
-  });
+  return Promise.all(
+    this.events.map((item) =>
+      Promise.resolve().then(() => {
+        if (item.e === e) {
+          return item.fn(...args);
+        }
+      })
+    )
+  );
 }
 
 function assign(fn, src, mapping) {
@@ -363,7 +367,7 @@ export function renew(src, ...params) {
     return Promise.resolve()
       .then(() => event.emit('beforeRenew', [params]))
       .then(() => query(src, [params]))
-      .then((data) => (event.emit('afterRenew', [params], data), data));
+      .then((data) => event.emit('afterRenew', [params], data).then(() => data));
   }
 
   const { atoms } = src;
@@ -374,7 +378,7 @@ export function renew(src, ...params) {
     return Promise.resolve()
       .then(() => event.emit('beforeRenew', params))
       .then(() => query(src, ...params))
-      .then((data) => (event.emit('afterRenew', params, data), data));
+      .then((data) => event.emit('afterRenew', params, data).then(() => data));
   }
 
   return atom.renew();
