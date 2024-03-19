@@ -1,18 +1,7 @@
 {
-  "name": "fods",
-  "version": "2.0.2",
-  "description": "Frontend Operational Data Store",
-  "main": "index.js",
-  "type": "module",
-  "author": "tangshuang",
-  "license": "MIT",
-  "scripts": {
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest"
-  },
-  "devDependencies": {
-    "jest": "^29.7.0"
-  },
-  "jest": {
-    "transform": {}
-  }
+  "name": "fods-project",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ]
 }
