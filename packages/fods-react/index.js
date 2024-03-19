@@ -1,112 +1,99 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { isTypeOf, SOURCE_TYPE, COMPOSE_TYPE, query, getObjectHash, renew, read, addListener, removeListener } from 'fods';
 
-export function useSource(src, args = [], options = {}) {
+export function useSource(src, defaultValue) {
   if (!isTypeOf(src, SOURCE_TYPE, COMPOSE_TYPE)) {
     throw new Error('useSource only supports SOURCE_TYPE, COMPOSE_TYPE')
   }
 
-  const params = isTypeOf(COMPOSE_TYPE) ? [args] : args;
-
-  const { default: defaultValue, immediate } = options;
-  const curr = read(src, ...params);
-  const hash = getObjectHash(args);
-  const data = typeof curr === 'undefined' ? defaultValue : curr;
-
   const [initing, setIniting] = useState(false);
-  const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [empty, setEmpty] = useState(typeof curr !== 'undefined' ? false : true);
+  const [error, setError] = useState(null);
+  const [empty, setEmpty] = useState(true);
+  const [data, setData] = useState(defaultValue);
 
-  const isInited = useRef(false);
+  const params = useRef();
+  const isMatch = (args) => getObjectHash(args) === getObjectHash(params.current);
 
-  const [, setState] = useState({});
-  const forceUpdate = () => setState({});
-
-  const init = () => {
+  const init = (...args) => {
     setIniting(true);
+    params.current = args;
 
-    const defer = query(src, ...params);
+    const defer = query(src, ...args);
 
-    defer.then(() => {
+    defer.then((data) => {
+      if (!isMatch(args)) {
+        return;
+      }
       setError(null);
-      forceUpdate();
       setEmpty(false);
+      setData(data);
     });
 
     defer.finally(() => {
+      if (!isMatch(args)) {
+        return;
+      }
       setIniting(false);
     });
 
     defer.catch((e) => {
+      if (!isMatch(args)) {
+        return;
+      }
       setError(e);
     });
-
-    isInited.current = true;
 
     return defer;
   };
 
   const refresh = () => {
+    const args = params.current;
+    if (!args) {
+      throw new Error(`You should must invoke init firstly.`);
+    }
+
     setRefreshing(true);
 
-    const defer = renew(src, ...params);
+    const defer = renew(src, ...args);
 
-    defer.then(() => {
+    defer.then((data) => {
+      if (!isMatch(args)) {
+        return;
+      }
       setError(null);
-      forceUpdate();
       setEmpty(false);
+      setData(data);
     });
 
     defer.finally(() => {
+      if (!isMatch(args)) {
+        return;
+      }
       setRefreshing(false);
     });
 
     defer.catch((e) => {
+      if (!isMatch(args)) {
+        return;
+      }
       setError(e);
     });
 
     return defer;
   };
 
-  // the first time request immediately
-  // only run before inited
-  useMemo(() => {
-    if (isInited.current) {
-      return;
-    }
-    if (immediate === 'auto') {
-      if (!args.length) {
-        init();
-      }
-      else if (args.length && args.every(item => typeof item !== 'undefined')) {
-        init();
-      }
-    }
-    else if (immediate) {
-      init();
-    }
-  }, [src, hash]);
-
-  // when src, args changed, and first query called, re-query data automaticly
-  // only run after inited
-  useEffect(() => {
-    if (isInited.current) {
-      init();
-    }
-  }, [src, hash]);
-
   // react when any other place change source data
   useEffect(() => {
-    const update = (params) => {
-      const h = getObjectHash(params);
-      if (h === hash) {
-        forceUpdate();
+    const update = (args, next) => {
+      if (!isMatch(args)) {
+        return;
       }
+      setData(next);
     };
     addListener(src, 'change', update);
     return () => removeListener(src, 'change', update);
-  }, [src, hash]);
+  }, []);
 
   return { data, initing, empty, error, refreshing, init, refresh };
 }

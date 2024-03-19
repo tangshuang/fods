@@ -1,17 +1,19 @@
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, shallowRef } from 'vue';
 import { isTypeOf, SOURCE_TYPE, COMPOSE_TYPE, query, getObjectHash, renew, addListener, removeListener } from 'fods';
 
-export function useSource(src) {
+export function useSource(src, defaultValue) {
   if (!isTypeOf(src, SOURCE_TYPE, COMPOSE_TYPE)) {
     throw new Error('useSource only supports SOURCE_TYPE, COMPOSE_TYPE')
   }
 
-  const data = ref();
   const initing = ref(false);
-  const empty = ref(true);
-  const error = ref(null);
   const refreshing = ref(false);
+  const error = ref(null);
+  const empty = ref(true);
+  const data = shallowRef(defaultValue);
+
   const params = ref();
+  const isMatch = (args) => getObjectHash(args) === getObjectHash(params.value);
 
   const init = (...args) => {
     initing.value = true;
@@ -20,16 +22,25 @@ export function useSource(src) {
     const defer = query(src, ...args);
 
     defer.then((res) => {
+      if (!isMatch(args)) {
+        return;
+      }
       error.value = null;
       empty.value = false;
       data.value = res;
     });
 
     defer.finally(() => {
+      if (!isMatch(args)) {
+        return;
+      }
       initing.value = false;
     });
 
     defer.catch((e) => {
+      if (!isMatch(args)) {
+        return;
+      }
       error.value = e;
     });
 
@@ -47,16 +58,25 @@ export function useSource(src) {
     const defer = renew(src, ...args);
 
     defer.then((res) => {
+      if (!isMatch(args)) {
+        return;
+      }
       error.value = null;
       empty.value = false;
       data.value = res;
     });
 
     defer.finally(() => {
+      if (!isMatch(args)) {
+        return;
+      }
       refreshing.value = false;
     });
 
     defer.catch((e) => {
+      if (!isMatch(args)) {
+        return;
+      }
       error.value = e;
     });
 
@@ -64,9 +84,10 @@ export function useSource(src) {
   };
 
   const update = (args, next) => {
-    if (getObjectHash(args) === getObjectHash(params.value)) {
-      data.value = next;
+    if (!isMatch(args)) {
+      return;
     }
+    data.value = next;
   };
 
   onMounted(() => {

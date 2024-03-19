@@ -3,7 +3,7 @@
 Use fods in Vue component.
 
 ```
-npm i fods-vue
+npm i fods fods-vue
 ```
 
 ## Usage
@@ -36,8 +36,8 @@ Notice: only SOURCE_TYPE, COMPOSE_TYPE supported now.
 
 ## API
 
-```
-useSource<T, U extends any[]>(source: Source<T, U>): {
+```ts
+function useSource<T, U extends any[]>(source: Source<T, U>, defaultValue: T): {
   data: T;
   initing: boolean;
   empty: boolean;
@@ -49,6 +49,7 @@ useSource<T, U extends any[]>(source: Source<T, U>): {
 ```
 
 - source: the source object defined by `fods`
+- default: before inited, what to be as data
 - data: the data of source with the given params
 - initing: before the first query attached to local, when `init` is invoked, it will be `true`
 - empty: before the first query, wheather the data is empty
@@ -56,6 +57,4 @@ useSource<T, U extends any[]>(source: Source<T, U>): {
 - error: when some errors occur during `init` or `refresh`, it will be an Error
 - init: first query data
   - params: request params to pass into query
-- refresh: refresh the data with the params which passed into `init`
-
-The `init` method may be called with different params amount different invokings, this will request new data and change the refresh params at the same time.
+- refresh: refresh the data with the same params of `init`

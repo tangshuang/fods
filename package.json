@@ -1,6 +1,7 @@
 {
   "name": "fods-project",
   "private": true,
+  "version": "2.2.0",
   "workspaces": [
     "packages/*"
   ]
