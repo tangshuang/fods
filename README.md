@@ -12,6 +12,7 @@ npm i fods
 
 ```js
 import { source, query } from 'fods';
+// import { source, query } from 'https://unpkg.com/fods';
 
 // define a source
 const UserBooks = source((uid) => {
