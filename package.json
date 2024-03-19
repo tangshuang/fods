@@ -3,7 +3,7 @@
   "private": true,
   "version": "2.1.0-beta",
   "scripts": {
-    "version": "npx standard-version --workspaces"
+    "release": "standard-version"
   },
   "workspaces": [
     "packages/*"
