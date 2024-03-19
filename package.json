@@ -1,14 +1,13 @@
 {
   "name": "fods-project",
   "private": true,
-  "version": "2.1.2",
+  "version": "2.1.0",
   "scripts": {
-    "release": "standard-version"
+    "version": "node scripts/post-version.js",
+    "pub": "npm publish --workspaces",
+    "prepublishOnly": "npm run pub"
   },
   "workspaces": [
     "packages/*"
-  ],
-  "devDependencies": {
-    "standard-version": "^9.5.0"
-  }
+  ]
 }
