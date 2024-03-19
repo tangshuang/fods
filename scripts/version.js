@@ -1,4 +1,4 @@
-const { execSync, exec } = require('child_process');
+const { execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
@@ -16,5 +16,5 @@ const pkgs = fs.readdirSync(pkgsRoot);
 pkgs.forEach((pkg) => {
     const sh = `cd "${path.resolve(pkgsRoot, pkg)}" && npm version ${version}`;
     console.log(sh);
-    exec(sh);
+    execSync(sh);
 });
