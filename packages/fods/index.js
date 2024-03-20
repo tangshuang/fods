@@ -147,7 +147,7 @@ export function query(src, ...params) {
       hash,
     };
     const renew = () => Promise.resolve(get(...params)).then((value) => {
-      item.value = value;
+      item.value = deepFreeze(value);
       item.defer = Promise.resolve(value);
       event.emit('change', params, value);
       return value;
@@ -215,7 +215,7 @@ export function query(src, ...params) {
             // support param as a string, for example: res['xxxxxxx']
             const value = find(ret, param);
             const hash = queueHashMap[i];
-            cache[hash] = value;
+            cache[hash] = deepFreeze(value);
             delete defers[hash];
           });
         });
@@ -284,7 +284,7 @@ export function subscribe(src, {
         onend: () => {
           onend?.(chunks);
           // only patch chunks after successfully
-          item.chunks = chunks;
+          item.chunks = deepFreeze(chunks);
           event.emit('end', params, chunks);
         },
         onerror: (e) => {
@@ -367,42 +367,45 @@ export function renew(src, ...params) {
 }
 
 export function clear(src, ...params) {
-  const { type, atoms } = src;
+  const { type, atoms, event } = src;
 
   if (![SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE].includes(type)) {
     throw new Error('clear can only invoke SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE');
   }
 
-  // release all local atoms
-  if (!params.length) {
+  return event.emit('beforeClear', params).then(() => {
+    // release all local atoms
+    if (!params.length) {
+      if (type === COMPOSE_TYPE) {
+        src.cache = {};
+      }
+      else {
+        atoms.length = 0;
+      }
+      return event.emit('afterClear', params);
+    }
+
     if (type === COMPOSE_TYPE) {
-      src.cache = {};
+      const { cache } = src;
+
+      // should must be an array to map to params
+      params = params[0];
+
+      const hashMap = params.map(param => getObjectHash([param]));
+      params.forEach((_, i) => {
+        delete cache[hashMap[i]];
+      });
+      return event.emit('afterClear', params);
     }
-    else {
-      atoms.length = 0;
+
+    // release given params relative atom
+    const hash = getObjectHash(params);
+    const index = atoms.findIndex(item => item.hash === hash);
+    if (index > -1) {
+      atoms.splice(index, 1);
     }
-    return;
-  }
-
-  if (type === COMPOSE_TYPE) {
-    const { cache } = src;
-
-    // should must be an array to map to params
-    params = params[0];
-
-    const hashMap = params.map(param => getObjectHash([param]));
-    params.forEach((_, i) => {
-      delete cache[hashMap[i]];
-    });
-    return;
-  }
-
-  // release given params relative atom
-  const hash = getObjectHash(params);
-  const index = atoms.findIndex(item => item.hash === hash);
-  if (index > -1) {
-    atoms.splice(index, 1);
-  }
+    return event.emit('afterClear', params);
+  });
 }
 
 export function isTypeOf(src, ...types) {
@@ -504,7 +507,7 @@ function assign(fn, src, mapping) {
  * @param {object} obj
  * @returns {string}
  */
-function getObjectHash(obj) {
+export function getObjectHash(obj) {
   if (typeof obj !== 'object') {
     return
   }
@@ -594,4 +597,20 @@ function getStringHash(str) {
   }
 
   return hash >>> 0
+}
+
+function deepFreeze(object) {
+  // Retrieve the property names defined on object
+  const propNames = Reflect.ownKeys(object);
+
+  // Freeze properties before freezing self
+  for (const name of propNames) {
+    const value = object[name];
+
+    if ((value && typeof value === "object") || typeof value === "function") {
+      deepFreeze(value);
+    }
+  }
+
+  return Object.freeze(object);
 }
