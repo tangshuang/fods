@@ -1,6 +1,6 @@
 {
   "name": "fods-vue",
-  "version": "2.1.6",
+  "version": "2.1.7",
   "description": "Frontend Operational Data Store",
   "main": "index.js",
   "type": "module",
