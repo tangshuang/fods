@@ -429,13 +429,14 @@ export function clear(src, ...params) {
     if (type === COMPOSE_TYPE) {
       const { cache } = src;
 
-      // should must be an array to map to params
-      params = params[0];
-
-      const hashMap = params.map(param => getObjectHash([param]));
-      params.forEach((_, i) => {
-        delete cache[hashMap[i]];
+      const [args, ...others] = params;
+      args.forEach((arg) => {
+        const group = getObjectHash(others);
+        const hash = getObjectHash(arg);
+        const key = `${group}.${hash}`;
+        delete cache[key];
       });
+
       return event.emit('afterClear', params);
     }
 
