@@ -5,7 +5,7 @@
   "scripts": {
     "postversion": "node scripts/post-version.js",
     "pub": "npm publish --workspaces",
-    "prepublishOnly": "node scripts/pre-publish.js && run pub"
+    "prepublishOnly": "node scripts/pre-publish.js && npm run pub"
   },
   "workspaces": [
     "packages/*"
