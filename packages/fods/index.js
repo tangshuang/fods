@@ -62,8 +62,8 @@ export function compose(get, find) {
     defers: {},
   };
 
-  function qry(params) {
-    return query(qry, params);
+  function qry(...params) {
+    return query(qry, ...params);
   }
 
   assign(qry, src, {
@@ -166,69 +166,110 @@ export function query(src, ...params) {
     // should must be an array to map to params
     const [args, ...others] = params;
 
-    const hashMap = args.map(param => getObjectHash([param, ...others]));
-    const filteredParams = args.filter((_, i) => !(hashMap[i] in cache));
+    const paramKeyList = [];
+
+    const pendingParamList = [];
+    const group = getObjectHash(others);
+    let cachedCount = 0;
+
+    args.forEach((param) => {
+      const hash = getObjectHash(param);
+      const key = `${group}.${hash}`;
+      const cached = key in cache;
+
+      paramKeyList.push(key);
+
+      if (cached) {
+        cachedCount ++;
+      }
+      else {
+        pendingParamList.push({
+          param,
+          others,
+          group,
+          key,
+        });
+      }
+    });
 
     // all cahced
-    if (!filteredParams.length) {
-      const output = hashMap.map(hash => cache[hash]);
+    if (cachedCount === args.length) {
+      const output = paramKeyList.map(key => cache[key]);
       return Promise.resolve(output);
     }
 
-    queue.push(...filteredParams);
+    // push into queue to wait to be used
+    pendingParamList.forEach((item) => {
+      const { key } = item;
+      const exists = queue[key];
+      if (!exists) {
+        queue[key] = item;
+      }
+    });
 
     return new Promise((resolve, reject) => {
       setTimeout(() => {
+        const { queue } = src;
+        const keys = Object.keys(queue);
+
         // queue has been cleaned
-        if (!queue.length) {
-          const qlist = hashMap.map((hash) => {
-            if (defers[hash]) {
-              return defers[hash];
-            }
-            return Promise.resolve(cache[hash]);
-          });
-          Promise.all(qlist).then(() => {
-            const res = hashMap.map(hash => cache[hash]);
+        if (!keys.length) {
+          Promise.all(paramKeyList.filter(key => defers[key]).map(key => defers[key])).then(() => {
+            const res = paramKeyList.map(key => cache[key]);
             return res;
           }).then(resolve, reject);
           return;
         }
 
-        const pendingList = [];
-        const queueParams = [...queue];
-        const queueHashMap = queueParams.map(param => getObjectHash([param, ...others]));
-
         // clear queue
-        queue.length = 0;
+        src.queue = {};
 
-        queueHashMap.forEach((hash) => {
-          if (defers[hash]) {
-            pendingList.push(defers[hash]);
-            // remove those in pending
-            queueParams.splice(i, 1);
-            queueHashMap.splice(i, 1);
+        const pendingList = [];
+        const groupList = [];
+
+        keys.forEach((key) => {
+          if (defers[key]) {
+            pendingList.push(defers[key]);
+            return;
+          }
+
+          const item = queue[key];
+          const { group, others } = item;
+          const exists = groupList.find(item => item.hash === group);
+          if (exists) {
+            exists.items.push(item);
+          }
+          else {
+            groupList.push({
+              hash: group,
+              others,
+              items: [item],
+            });
           }
         });
 
-        const newRequest = Promise.resolve(get(queueParams, ...others)).then((ret) => {
-          queueParams.forEach((param, i) => {
-            // support param as a string, for example: res['xxxxxxx']
-            const value = find(ret, param);
-            const hash = queueHashMap[i];
-            cache[hash] = deepFreeze(value);
-            delete defers[hash];
+        groupList.forEach((group) => {
+          const { others, items } = group;
+          const params = items.map(item => item.param);
+
+          const request = Promise.resolve(get(params, ...others)).then((ret) => {
+            items.forEach((item) => {
+              const value = find(ret, item.param);
+              const key = item.key;
+              cache[key] = deepFreeze(value);
+              delete defers[key];
+            });
           });
+
+          items.forEach((item) => {
+            defers[item.key] = request;
+          });
+
+          pendingList.push(request);
         });
 
-        queueHashMap.forEach((hash) => {
-          defers[hash] = newRequest;
-        });
-
-        Promise.all([
-          newRequest,
-          ...pendingList,
-        ]).then(() => {
-          const res = hashMap.map(hash => cache[hash]);
+        Promise.all(pendingList).then(() => {
+          const res = paramKeyList.map(key => cache[key]);
           event.emit('change', params, res);
           return res;
         }).then(resolve, reject);
@@ -338,18 +379,18 @@ export function renew(src, ...params) {
   if (type === COMPOSE_TYPE) {
     const { cache } = src;
 
-    // should must be an array to map to params
-    params = params[0];
-
-    const hashMap = params.map(param => getObjectHash([param]));
-    params.forEach((_, i) => {
-      delete cache[hashMap[i]];
+    const [args, ...others] = params;
+    args.forEach((arg) => {
+      const group = getObjectHash(others);
+      const hash = getObjectHash(arg);
+      const key = `${group}.${hash}`;
+      delete cache[key];
     });
 
     return Promise.resolve()
-      .then(() => event.emit('beforeRenew', [params]))
-      .then(() => query(src, [params]))
-      .then((data) => event.emit('afterRenew', [params], data).then(() => data));
+      .then(() => event.emit('beforeRenew', params))
+      .then(() => query(src, ...params))
+      .then((data) => event.emit('afterRenew', params, data).then(() => data));
   }
 
   const { atoms } = src;
@@ -509,7 +550,7 @@ function assign(fn, src, mapping) {
  */
 export function getObjectHash(obj) {
   if (typeof obj !== 'object') {
-    return
+    obj = [obj];
   }
 
   let str = stringify(obj)

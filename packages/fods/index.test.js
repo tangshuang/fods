@@ -43,6 +43,65 @@ describe('FODS', () => {
     expect(count).toBe(2);
   });
 
+  test('compose more same params', async () => {
+    let count = 0;
+
+    const queryBooks = compose(
+      async (ids, ...others) => new Promise((r) => {
+        count ++;
+        setTimeout(() => r(ids.map(id => ({ id, name: `book${id} ${others.join(',')}` }))), 0);
+      }),
+      (ret, id) => ret.find(item => item.id === id),
+    );
+
+    // when two request send at the same time (in 64ms), they will share one queue, so the following count is 1
+    const [books1, books2] = await Promise.all([
+      queryBooks(['sea', 'cast'], 'test'),
+      queryBooks(['holl'], 'test'),
+    ]);
+
+    expect(count).toBe(1);
+
+    expect(books1).toEqual([{ id: 'sea', name: 'booksea test' }, { id: 'cast', name: 'bookcast test' }]);
+    expect(books2).toEqual([{ id: 'holl', name: 'bookholl test' }]);
+
+
+    // notice, the params are not the same as upper
+    await queryBooks.renew(['holl', 'cast'], 'test');
+    expect(count).toBe(2);
+  });
+
+  test('compose more different params', async () => {
+    let count = 0;
+
+    const queryBooks = compose(
+      async (ids, ...others) => new Promise((r) => {
+        count ++;
+        setTimeout(() => r(ids.map(id => ({ id, name: `book${id} ${others.join(',')}` }))), 0);
+      }),
+      (ret, id) => ret.find(item => item.id === id),
+    );
+
+    // when two request send at the same time (in 64ms), they will share one queue, so the following count is 1
+    const [books1, books2] = await Promise.all([
+      queryBooks(['sea', 'cast'], 'test1'),
+      queryBooks(['holl'], 'test2'),
+    ]);
+
+    expect(count).toBe(2);
+
+    expect(books1).toEqual([{ id: 'sea', name: 'booksea test1' }, { id: 'cast', name: 'bookcast test1' }]);
+    expect(books2).toEqual([{ id: 'holl', name: 'bookholl test2' }]);
+
+    // notice, holl + test1 will create a new cache, however, only one request will be create
+    const [book3, book4] = await queryBooks.renew(['holl', 'cast'], 'test1');
+
+    expect(count).toBe(3);
+
+    expect(book3).toEqual({ id: 'holl', name: 'bookholl test1' });
+    expect(book4).toEqual(books1[1]);
+  });
+
   test('stream basic use', (done) => {
     let invoked = 0;
     const booksStream = stream(({ ondata, onend, onerror }) => (type) => {
