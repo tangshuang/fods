@@ -464,11 +464,14 @@ export function read(src, ...params) {
   if (type === COMPOSE_TYPE) {
     const { cache } = src;
 
-    // should must be an array to map to params
-    params = params[0];
+    const [args, ...others] = params;
+    const out = args.map((arg) => {
+      const group = getObjectHash(others);
+      const hash = getObjectHash(arg);
+      const key = `${group}.${hash}`;
+      return cache[key];
+    });
 
-    const hashMap = params.map(param => getObjectHash([param]));
-    const out = params.map((_, i) => cache[hashMap[i]]);
     return out;
   }
 
