@@ -164,10 +164,10 @@ export function query(src, ...params) {
     const { cache, get, find, event, defers, queue } = src;
 
     // should must be an array to map to params
-    params = params[0];
+    const [args, ...others] = params;
 
-    const hashMap = params.map(param => getObjectHash([param]));
-    const filteredParams = params.filter((_, i) => !(hashMap[i] in cache));
+    const hashMap = args.map(param => getObjectHash([param, ...others]));
+    const filteredParams = args.filter((_, i) => !(hashMap[i] in cache));
 
     // all cahced
     if (!filteredParams.length) {
@@ -196,7 +196,7 @@ export function query(src, ...params) {
 
         const pendingList = [];
         const queueParams = [...queue];
-        const queueHashMap = queueParams.map(param => getObjectHash([param]));
+        const queueHashMap = queueParams.map(param => getObjectHash([param, ...others]));
 
         // clear queue
         queue.length = 0;
@@ -210,7 +210,7 @@ export function query(src, ...params) {
           }
         });
 
-        const newRequest = Promise.resolve(get(queueParams)).then((ret) => {
+        const newRequest = Promise.resolve(get(queueParams, ...others)).then((ret) => {
           queueParams.forEach((param, i) => {
             // support param as a string, for example: res['xxxxxxx']
             const value = find(ret, param);
