@@ -397,14 +397,10 @@ export function renew(src, ...params) {
   const hash = getObjectHash(params);
   const atom = atoms.find(item => item.hash === hash);
 
-  if (type === SOURCE_TYPE && !atom) {
-    return Promise.resolve()
-      .then(() => event.emit('beforeRenew', params))
-      .then(() => query(src, ...params))
-      .then((data) => event.emit('afterRenew', params, data).then(() => data));
-  }
-
-  return atom.renew();
+  return Promise.resolve()
+    .then(() => event.emit('beforeRenew', params))
+    .then(() => atom ? atom.renew() : query(src, ...params))
+    .then((data) => event.emit('afterRenew', params, data).then(() => data));
 }
 
 export function clear(src, ...params) {

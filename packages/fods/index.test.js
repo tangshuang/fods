@@ -1,4 +1,4 @@
-import { source, compose, stream, action } from './index.js';
+import { source, compose, stream, action, addListener } from './index.js';
 
 describe('FODS', () => {
   test('source basic use', async () => {
@@ -149,5 +149,24 @@ describe('FODS', () => {
     ]);
 
     expect(count).toBe(1);
+  });
+
+  test('bugfix renew trigger beforeRenew', async () => {
+    let count = 0;
+    const queryBook = source((id) => new Promise(r => (count ++, setTimeout(() => r({ id, name: `book${id}` }), 16))));
+
+    await queryBook('cast');
+    expect(count).toBe(1);
+
+    await queryBook('cast');
+    expect(count).toBe(1); // request not be called
+
+
+    addListener(queryBook, 'beforeRenew', () => {
+      count ++;
+    });
+
+    await queryBook.renew('cast');
+    expect(count).toBe(3); // renew + 1, beforeRenew + 1
   });
 });
