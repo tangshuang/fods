@@ -146,17 +146,26 @@ export function query(src, ...params) {
     const item = {
       hash,
     };
-    const renew = () => Promise.resolve(get(...params)).then((value) => {
-      item.value = deepFreeze(value);
-      item.defer = Promise.resolve(value);
-      event.emit('change', params, value);
-      return value;
-    });
+
+    const renew = () => Promise.resolve()
+      .then(() => get(...params))
+      .then((value) => {
+        item.value = deepFreeze(value);
+        item.defer = Promise.resolve(value);
+        event.emit('change', params, value);
+        return value;
+      });
+
     const defer = renew();
+
     item.renew = renew;
     item.defer = defer;
+    atoms.push(item);
 
-    atoms.push(item)
+    // remove item when error
+    defer.catch(() => {
+      atoms.splice(atoms.indexOf(item), 1);
+    });
 
     return defer;
   }
@@ -252,17 +261,26 @@ export function query(src, ...params) {
           const { others, items } = group;
           const params = items.map(item => item.param);
 
-          const request = Promise.resolve(get(params, ...others)).then((ret) => {
-            items.forEach((item) => {
-              const value = find(ret, item.param);
-              const key = item.key;
-              cache[key] = deepFreeze(value);
-              delete defers[key];
+          const request = Promise.resolve()
+            .then(() => get(params, ...others))
+            .then((ret) => {
+              items.forEach((item) => {
+                const value = find(ret, item.param);
+                const key = item.key;
+                cache[key] = deepFreeze(value);
+                delete defers[key];
+              });
             });
-          });
 
           items.forEach((item) => {
             defers[item.key] = request;
+          });
+
+          // remove item when error
+          request.catch(() => {
+            items.forEach((item) => {
+              delete defers[item.key];
+            });
           });
 
           pendingList.push(request);

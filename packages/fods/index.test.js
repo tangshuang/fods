@@ -151,7 +151,7 @@ describe('FODS', () => {
     expect(count).toBe(1);
   });
 
-  test('bugfix renew trigger beforeRenew', async () => {
+  test('bugfix: renew trigger beforeRenew', async () => {
     let count = 0;
     const queryBook = source((id) => new Promise(r => (count ++, setTimeout(() => r({ id, name: `book${id}` }), 16))));
 
@@ -169,4 +169,31 @@ describe('FODS', () => {
     await queryBook.renew('cast');
     expect(count).toBe(3); // renew + 1, beforeRenew + 1
   });
+
+  // test('bugfix: init error empty', async () => {
+  //   let count = 0;
+  //   const queryBook = source(() => new Promise((resolve, reject) => {
+  //     setTimeout(() => {
+  //       if (count === 0) {
+  //         reject('error');
+  //       }
+  //       else {
+  //         resolve('ok');
+  //       }
+  //       count ++;
+  //     }, 16);
+  //   }));
+
+  //   await expect(() => queryBook()).rejects.toThrow('error');
+  //   expect(count).toBe(1);
+
+  //   let data;
+  //   data = await queryBook();
+  //   expect(count).toBe(2);
+  //   expect(data).toBe('ok');
+
+  //   data = await queryBook();
+  //   expect(count).toBe(2); // not called
+  //   expect(data).toBe('ok');
+  // });
 });
