@@ -1,7 +1,7 @@
 {
   "name": "fods-project",
   "private": true,
-  "version": "2.1.10",
+  "version": "2.1.11",
   "scripts": {
     "postversion": "node scripts/post-version.js",
     "pub": "npm publish --workspaces",

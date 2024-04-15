@@ -6,8 +6,8 @@ export function useSource(src, defaultValue) {
     throw new Error('useSource only supports SOURCE_TYPE, COMPOSE_TYPE')
   }
 
-  const [initing, setIniting] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setIniting] = useState(false);
+  const [reloading, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [empty, setEmpty] = useState(true);
   const [data, setData] = useState(defaultValue);
@@ -47,12 +47,7 @@ export function useSource(src, defaultValue) {
     return defer;
   };
 
-  const refresh = () => {
-    const args = params.current;
-    if (!args) {
-      throw new Error(`You should must invoke init firstly.`);
-    }
-
+  const renew = (...args) => {
     setRefreshing(true);
 
     const defer = renew(src, ...args);
@@ -83,6 +78,15 @@ export function useSource(src, defaultValue) {
     return defer;
   };
 
+
+  const refresh = () => {
+    const args = params.current;
+    if (!args) {
+      return;
+    }
+    return renew(...args);
+  }
+
   // react when any other place change source data
   useEffect(() => {
     const update = (args, next) => {
@@ -95,5 +99,5 @@ export function useSource(src, defaultValue) {
     return () => removeListener(src, 'change', update);
   }, []);
 
-  return { data, initing, empty, error, refreshing, init, refresh };
+  return { data, loading, empty, error, reloading, init, refresh, renew };
 }

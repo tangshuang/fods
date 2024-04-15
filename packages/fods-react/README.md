@@ -52,3 +52,4 @@ function useSource<T, U extends any[]>(source: Source<T, U>, defaultValue: T): {
 - init: first query data
   - params: request params to pass into query
 - refresh: refresh the data with the same params of `init`
+- renew: refresh the data with certain params, different from params of `init`

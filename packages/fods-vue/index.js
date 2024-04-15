@@ -6,8 +6,8 @@ export function useSource(src, defaultValue) {
     throw new Error('useSource only supports SOURCE_TYPE, COMPOSE_TYPE')
   }
 
-  const initing = ref(false);
-  const refreshing = ref(false);
+  const loading = ref(false);
+  const reloading = ref(false);
   const error = ref(null);
   const empty = ref(true);
   const data = shallowRef(defaultValue);
@@ -16,7 +16,7 @@ export function useSource(src, defaultValue) {
   const isMatch = (args) => getObjectHash(args) === getObjectHash(params.value);
 
   const init = (...args) => {
-    initing.value = true;
+    loading.value = true;
     params.value = args;
 
     const defer = query(src, ...args);
@@ -34,7 +34,7 @@ export function useSource(src, defaultValue) {
       if (!isMatch(args)) {
         return;
       }
-      initing.value = false;
+      loading.value = false;
     });
 
     defer.catch((e) => {
@@ -47,13 +47,8 @@ export function useSource(src, defaultValue) {
     return defer;
   };
 
-  const refresh = () => {
-    const args = params.value;
-    if (!args) {
-      throw new Error(`You should must invoke init firstly.`);
-    }
-
-    refreshing.value = true;
+  const renew = (...args) => {
+    reloading.value = true;
 
     const defer = renew(src, ...args);
 
@@ -70,7 +65,7 @@ export function useSource(src, defaultValue) {
       if (!isMatch(args)) {
         return;
       }
-      refreshing.value = false;
+      reloading.value = false;
     });
 
     defer.catch((e) => {
@@ -81,6 +76,14 @@ export function useSource(src, defaultValue) {
     });
 
     return defer;
+  };
+
+  const refresh = () => {
+    const args = params.value;
+    if (!args) {
+      return;
+    }
+    return renew(...args);
   };
 
   const update = (args, next) => {
@@ -98,5 +101,5 @@ export function useSource(src, defaultValue) {
     removeListener(src, 'change', update);
   });
 
-  return { data, initing, empty, error, refreshing, init, refresh };
+  return { data, loading, empty, error, reloading, init, refresh, renew };
 }
