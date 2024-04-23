@@ -658,18 +658,18 @@ function getStringHash(str) {
   return hash >>> 0
 }
 
-function deepFreeze(object) {
-  // Retrieve the property names defined on object
-  const propNames = Reflect.ownKeys(object);
-
-  // Freeze properties before freezing self
-  for (const name of propNames) {
-    const value = object[name];
-
-    if ((value && typeof value === "object") || typeof value === "function") {
-      deepFreeze(value);
-    }
+function deepFreeze(obj) {
+  // only freeze object and array
+  if (!(obj && typeof obj === 'object')) {
+    return obj;
   }
 
-  return Object.freeze(object);
+  // Freeze properties before freezing self
+  const keys = Object.keys(obj);
+  keys.forEach((key) => {
+    const value = obj[key];
+    deepFreeze(value);
+  });
+
+  return Object.freeze(obj);
 }
