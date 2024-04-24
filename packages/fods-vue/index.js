@@ -1,5 +1,5 @@
 import { ref, onMounted, onUnmounted, shallowRef } from 'vue';
-import { isTypeOf, SOURCE_TYPE, COMPOSE_TYPE, query, getObjectHash, renew, addListener, removeListener } from 'fods';
+import { isTypeOf, SOURCE_TYPE, COMPOSE_TYPE, query, getObjectHash, renew as renewSource, addListener, removeListener } from 'fods';
 
 export function useSource(src, defaultValue) {
   if (!isTypeOf(src, SOURCE_TYPE, COMPOSE_TYPE)) {
@@ -50,7 +50,7 @@ export function useSource(src, defaultValue) {
   const renew = (...args) => {
     reloading.value = true;
 
-    const defer = renew(src, ...args);
+    const defer = renewSource(src, ...args);
 
     defer.then((res) => {
       if (!isMatch(args)) {

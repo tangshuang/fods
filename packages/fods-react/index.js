@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { isTypeOf, SOURCE_TYPE, COMPOSE_TYPE, query, getObjectHash, renew, read, addListener, removeListener } from 'fods';
+import { isTypeOf, SOURCE_TYPE, COMPOSE_TYPE, query, getObjectHash, renew as renewSource, addListener, removeListener } from 'fods';
 
 export function useSource(src, defaultValue) {
   if (!isTypeOf(src, SOURCE_TYPE, COMPOSE_TYPE)) {
@@ -50,7 +50,7 @@ export function useSource(src, defaultValue) {
   const renew = (...args) => {
     setRefreshing(true);
 
-    const defer = renew(src, ...args);
+    const defer = renewSource(src, ...args);
 
     defer.then((data) => {
       if (!isMatch(args)) {
