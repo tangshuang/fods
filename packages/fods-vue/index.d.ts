@@ -3,9 +3,9 @@ import { Ref } from 'vue';
 
 declare function useSource<T, U extends any[]>(source: Source<T, U>, defaultValue?: T): {
   data: Ref<T>;
-  initing: Ref<boolean>;
+  loading: Ref<boolean>;
   empty: Ref<boolean>;
-  refreshing: Ref<boolean>;
+  reloading: Ref<boolean>;
   error: Ref<Error | null>;
   init: (...params: U) => Promise<T>;
   refresh: () => Promise<T>;
@@ -13,9 +13,9 @@ declare function useSource<T, U extends any[]>(source: Source<T, U>, defaultValu
 
 declare function useSource<T, U>(source: Composition<T, U>, defaultValue?: T[]): {
   data: Ref<T[]>;
-  initing: Ref<boolean>;
+  loading: Ref<boolean>;
   empty: Ref<boolean>;
-  refreshing: Ref<boolean>;
+  reloading: Ref<boolean>;
   error: Ref<Error | null>;
   init: (params: U[]) => Promise<T[]>;
   refresh: () => Promise<T[]>;
