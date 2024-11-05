@@ -93,7 +93,8 @@ export function action(act) {
   const src = {
     type: ACTION_TYPE,
     atoms: [],
-    act: fn,
+    act,
+    fn,
   };
 
   function run(...params) {
@@ -131,8 +132,10 @@ export function stream(executor) {
   return sub;
 }
 
+// ---
+
 export function query(src, ...params) {
-  const { type } = src;
+  const { type, bindings = [] } = src;
 
   if (type === SOURCE_TYPE) {
     const { atoms, get, event } = src;
@@ -148,7 +151,7 @@ export function query(src, ...params) {
     };
 
     const renew = () => Promise.resolve()
-      .then(() => get(...params))
+      .then(() => get(...bindings, ...params))
       .then((value) => {
         item.value = deepFreeze(value);
         item.defer = Promise.resolve(value);
@@ -170,7 +173,7 @@ export function query(src, ...params) {
     return defer;
   }
   else if (type === COMPOSE_TYPE) {
-    const { cache, get, find, event, defers, queue } = src;
+    const { cache, get, find, event, defers, queue, bindings = [] } = src;
 
     // should must be an array to map to params
     const [args, ...others] = params;
@@ -262,10 +265,12 @@ export function query(src, ...params) {
           const params = items.map(item => item.param);
 
           const request = Promise.resolve()
-            .then(() => get(params, ...others))
+            .then(() => get(params, [...bindings, ...others]))
             .then((ret) => {
+              // make sure the find function will receive non-null item
+              const res = ret.filter(item => typeof item !== 'undefined');
               items.forEach((item) => {
-                const value = find(ret, item.param);
+                const value = find(res, item.param);
                 const key = item.key;
                 cache[key] = deepFreeze(value);
                 delete defers[key];
@@ -303,7 +308,7 @@ export function subscribe(src, {
   onend,
   onerror,
 }) {
-  const { type, atoms, executor, event } = src;
+  const { type, atoms, executor, event, bindings = [] } = src;
 
   if (type !== STREAM_TYPE) {
     throw new Error('subscribe can only invoke STREAM_TYPE');
@@ -351,7 +356,7 @@ export function subscribe(src, {
           event.emit('error', params, e);
         },
       });
-      execute(...params);
+      execute(...bindings, ...params);
     };
     item.renew = renew;
     renew();
@@ -359,7 +364,7 @@ export function subscribe(src, {
 }
 
 export function take(src, ...params) {
-  const { type, act, atoms } = src;
+  const { type, fn, atoms, bindings = [] } = src;
 
   if (type !== ACTION_TYPE) {
     throw new Error('take can only invoke ACTION_TYPE');
@@ -376,7 +381,7 @@ export function take(src, ...params) {
     hash,
   };
 
-  const defer = Promise.resolve(act(...params)).finally(() => {
+  const defer = Promise.resolve(fn(...bindings, ...params)).finally(() => {
     const index = atoms.indexOf(item);
     if (index > -1) {
       atoms.splice(index, 1);
@@ -387,11 +392,17 @@ export function take(src, ...params) {
   return defer;
 }
 
+// ---
+
 export function renew(src, ...params) {
-  const { type, event } = src;
+  const { type, event, renewing } = src;
 
   if (![SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE].includes(type)) {
     throw new Error('renew can only invoke SOURCE_TYPE, STREAM_TYPE, COMPOSE_TYPE');
+  }
+
+  if (renewing) {
+    return renewing;
   }
 
   if (type === COMPOSE_TYPE) {
@@ -405,10 +416,13 @@ export function renew(src, ...params) {
       delete cache[key];
     });
 
-    return Promise.resolve()
+    const renewing = Promise.resolve()
       .then(() => event.emit('beforeRenew', params))
       .then(() => query(src, ...params))
-      .then((data) => event.emit('afterRenew', params, data).then(() => data));
+      .then((data) => event.emit('afterRenew', params, data).then(() => data))
+      .finally(() => (delete src.renewing));
+    src.renewing = renewing;
+    return renewing;
   }
 
   const { atoms } = src;
@@ -520,6 +534,36 @@ export function request(src, ...params) {
       exec(...params);
     });
   }
+}
+
+export function bind(src, ...bindings) {
+  const { type, get, find, act, executor } = src;
+
+  if (type === SOURCE_TYPE) {
+    const newSrc = source(get);
+    newSrc.bindings = bindings;
+    return newSrc;
+  }
+
+  if (type === COMPOSE_TYPE) {
+    const newSrc = compose(get, find);
+    newSrc.bindings = bindings;
+    return newSrc;
+  }
+
+  if (type === STREAM_TYPE) {
+    const newSrc = stream(executor);
+    newSrc.bindings = bindings;
+    return newSrc;
+  }
+
+  if (type === ACTION_TYPE) {
+    const newSrc = action(act);
+    newSrc.bindings = bindings;
+    return newSrc;
+  }
+
+  throw new Error('bind can only invoke SOURCE_TYPE, COMPOSE_TYPE, STREAM_TYPE,ACTION_TYPE');
 }
 
 export function addListener(src, e, fn) {

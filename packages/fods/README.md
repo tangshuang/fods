@@ -67,6 +67,7 @@ const MyList = compose(
         // return result list array
     },
     // find value in result list to record cache
+    // if undefined, ignored
     (res, id: string) => res.find(item => item.id === id),
 );
 
@@ -77,7 +78,18 @@ const all = await query(MyList, [1, 2, 3, 4]);
 renew(MyList, [2, 3]);
 ```
 
-Notice, compose should give only one parameter which is an array, and all of items should be same data type.
+Notice, the first parameter should be an array, and all of items should be same data type. The rest parameters will be passed.
+
+```js
+const MyList = compose(
+    (ids: string[], ...params: any[]) => {
+        return Promise.all(ids.map(id => fetchData(id, ...params)))
+    },
+    (res, id: string) => res.find(item => item.id === id),
+);
+
+const lite = await query(MyList, [1, 2], 'var1', 'var2');
+```
 
 **action & take**
 
@@ -151,6 +163,24 @@ const data = await request(SomeSource, 123); // without any affect to the store
 ```
 
 Request stream will return a Promise resolved when the `end` event be triggered.
+
+**bind**
+
+Create a new source which replaced parameters with given params so that when we query again, the params which are replaced should not not be given any more. Like `Function.prototype.bind`.
+
+For exmaple, we have a source:
+
+```js
+const some = source((a, b) => request(a, b));
+const data = await query(some, 123, 456);
+```
+
+We can use `bind` to replace `a` with `123`, and when we query again, `a` should not be given again, just pass `b`:
+
+```js
+const some123 = bind(some, 123);
+const data = await query(some123, 456);
+```
 
 **isTypeOf**
 
