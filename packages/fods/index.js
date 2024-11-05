@@ -135,7 +135,7 @@ export function stream(executor) {
 // ---
 
 export function query(src, ...params) {
-  const { type, bindings = [] } = src;
+  const { type } = src;
 
   if (type === SOURCE_TYPE) {
     const { atoms, get, event } = src;
@@ -151,7 +151,7 @@ export function query(src, ...params) {
     };
 
     const renew = () => Promise.resolve()
-      .then(() => get(...bindings, ...params))
+      .then(() => get(...params))
       .then((value) => {
         item.value = deepFreeze(value);
         item.defer = Promise.resolve(value);
@@ -173,7 +173,7 @@ export function query(src, ...params) {
     return defer;
   }
   else if (type === COMPOSE_TYPE) {
-    const { cache, get, find, event, defers, queue, bindings = [] } = src;
+    const { cache, get, find, event, defers, queue } = src;
 
     // should must be an array to map to params
     const [args, ...others] = params;
@@ -265,7 +265,7 @@ export function query(src, ...params) {
           const params = items.map(item => item.param);
 
           const request = Promise.resolve()
-            .then(() => get(params, [...bindings, ...others]))
+            .then(() => get(params, ...others))
             .then((ret) => {
               // make sure the find function will receive non-null item
               const res = ret.filter(item => typeof item !== 'undefined');
@@ -308,7 +308,7 @@ export function subscribe(src, {
   onend,
   onerror,
 }) {
-  const { type, atoms, executor, event, bindings = [] } = src;
+  const { type, atoms, executor, event } = src;
 
   if (type !== STREAM_TYPE) {
     throw new Error('subscribe can only invoke STREAM_TYPE');
@@ -356,7 +356,7 @@ export function subscribe(src, {
           event.emit('error', params, e);
         },
       });
-      execute(...bindings, ...params);
+      execute(...params);
     };
     item.renew = renew;
     renew();
@@ -364,7 +364,7 @@ export function subscribe(src, {
 }
 
 export function take(src, ...params) {
-  const { type, fn, atoms, bindings = [] } = src;
+  const { type, fn, atoms } = src;
 
   if (type !== ACTION_TYPE) {
     throw new Error('take can only invoke ACTION_TYPE');
@@ -381,7 +381,7 @@ export function take(src, ...params) {
     hash,
   };
 
-  const defer = Promise.resolve(fn(...bindings, ...params)).finally(() => {
+  const defer = Promise.resolve(fn(...params)).finally(() => {
     const index = atoms.indexOf(item);
     if (index > -1) {
       atoms.splice(index, 1);
@@ -514,7 +514,7 @@ export function read(src, ...params) {
 }
 
 export function request(src, ...params) {
-  const { type } = src
+  const { type } = src;
 
   if (type === ACTION_TYPE) {
     return Promise.resolve(src.act(...params));
@@ -534,36 +534,6 @@ export function request(src, ...params) {
       exec(...params);
     });
   }
-}
-
-export function bind(src, ...bindings) {
-  const { type, get, find, act, executor } = src;
-
-  if (type === SOURCE_TYPE) {
-    const newSrc = source(get);
-    newSrc.bindings = bindings;
-    return newSrc;
-  }
-
-  if (type === COMPOSE_TYPE) {
-    const newSrc = compose(get, find);
-    newSrc.bindings = bindings;
-    return newSrc;
-  }
-
-  if (type === STREAM_TYPE) {
-    const newSrc = stream(executor);
-    newSrc.bindings = bindings;
-    return newSrc;
-  }
-
-  if (type === ACTION_TYPE) {
-    const newSrc = action(act);
-    newSrc.bindings = bindings;
-    return newSrc;
-  }
-
-  throw new Error('bind can only invoke SOURCE_TYPE, COMPOSE_TYPE, STREAM_TYPE,ACTION_TYPE');
 }
 
 export function addListener(src, e, fn) {

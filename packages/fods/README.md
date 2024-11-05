@@ -164,24 +164,6 @@ const data = await request(SomeSource, 123); // without any affect to the store
 
 Request stream will return a Promise resolved when the `end` event be triggered.
 
-**bind**
-
-Create a new source which replaced parameters with given params so that when we query again, the params which are replaced should not not be given any more. Like `Function.prototype.bind`.
-
-For exmaple, we have a source:
-
-```js
-const some = source((a, b) => request(a, b));
-const data = await query(some, 123, 456);
-```
-
-We can use `bind` to replace `a` with `123`, and when we query again, `a` should not be given again, just pass `b`:
-
-```js
-const some123 = bind(some, 123);
-const data = await query(some123, 456);
-```
-
 **isTypeOf**
 
 Check whether the given object is type of a usable type.

@@ -128,11 +128,6 @@ declare function request<T, I, U extends any[]>(source: Composition<T, I, U>, pa
 declare function request<T extends any[], U extends any[]>(stream: Stream<T, U>, ...params: U): Promise<T>;
 declare function request<T, U extends any[]>(action: Action<T, U>, ...params: U): Promise<T>;
 
-declare function bind<T, U extends any[], B extends any[]>(source: Source<T, U>, ...bindings: B): Source<T, U extends [...B, ...infer R] ? R : never>;
-declare function bind<T, I, U extends any[], B extends any[]>(source: Composition<T, I, U>, params: I[], ...bindings: B): Composition<T, I, U extends [...B, ...infer R] ? R : never>;
-declare function bind<T, U extends any[], B extends any[]>(stream: Stream<T, U>, ...bindings: B): Stream<T, U extends [...B, ...infer R] ? R : never>;
-declare function bind<T, U extends any[], B extends any[]>(action: Action<T, U>, ...bindings: B): Action<T, U extends [...B, ...infer R] ? R : never>;
-
 type EventName = 'change' | 'beforeRenew' | 'afterRenew' | 'beforeClear' | 'afterClear';
 
 declare function addListener<T, U extends any[]>(source: Source<T, U>, event: EventName, callback: (params: U, value?: T) => void): () => void;
