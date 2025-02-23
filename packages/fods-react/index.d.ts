@@ -7,6 +7,7 @@ declare function useSource<T, U extends any[]>(source: Source<T, U>, defaultValu
   reloading: boolean;
   error: Error | null;
   init: (...params: U) => Promise<T>;
+  renew: (...params: U) => Promise<T>;
   refresh: () => Promise<T>;
 };
 
@@ -16,7 +17,8 @@ declare function useSource<T, U>(source: Composition<T, U>, defaultValue?: T[]):
   empty: boolean;
   reloading: boolean;
   error: Error | null;
-  init: (params: U[]) => Promise<T[]>;
+  init: (params: U[], ...args: any[]) => Promise<T[]>;
+  renew: (params: U[], ...args: any[]) => Promise<T[]>;
   refresh: () => Promise<T[]>;
 };
 
